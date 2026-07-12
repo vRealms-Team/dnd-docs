@@ -1,4 +1,5 @@
 export const appName = "DND Docs";
+export const discordUrl = "https://discord.gg/gvJ2bjKGYR";
 export const docsRoute = "/docs";
 export const docsImageRoute = "/og/docs";
 export const docsContentRoute = "/llms.mdx/docs";

@@ -1,6 +1,7 @@
 import { BookIcon, FileQuestion, ScrollText } from "lucide-react";
+import { IconBrandDiscord } from "@tabler/icons-react";
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
-import { appName, gitConfig } from "./shared";
+import { appName, gitConfig, discordUrl } from "./shared";
 
 export function baseOptions(): BaseLayoutProps {
   return {
@@ -35,6 +36,13 @@ export function baseOptions(): BaseLayoutProps {
         url: "/docs/changelog",
         icon: <ScrollText />,
         on: "all",
+      },
+      {
+        type: "icon",
+        label: "Discord",
+        icon: <IconBrandDiscord />,
+        text: "Discord",
+        url: discordUrl,
       },
     ],
   };
