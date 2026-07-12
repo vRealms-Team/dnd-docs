@@ -10,7 +10,7 @@ title: Troubleshooting
 
 ### Blank/black NUI on open
 - Almost always an un-built `web/dist` (see above), or `ui_page 'web/dist/index.html'` pointing at a missing file.
-- If it's fully built and still blank, check the F8 console for a JS error — the site's [Architecture Notes](../Development/architecture-notes) covers the NUI communication pattern if you're debugging a custom bridge.
+- If it's fully built and still blank, check the F8 console for a JS error.
 
 ### Missing `ox_lib` / `oxmysql`
 - Resource will not start at all — these are hard dependencies (`fxmanifest.lua`). Ensure both are `ensure`d before `dnd_phone` in `server.cfg`.

@@ -39,7 +39,7 @@ Each feature is its own app + server module (`server/modules/*.lua`) + client mo
 ## Recommended first steps
 1. Install dependencies — see [Dependencies](./Installation/dependencies).
 2. Import/verify the database schema — see [Database Setup](./Installation/database-setup).
-3. Build the frontend — see [Frontend Setup](./Installation/frontend-setup).
+3. Build the frontend (`cd web && npm install && npm run build`).
 4. Register the `phone` item in your inventory — see [Installation](./Installation).
 5. Configure `config/*.lua` to match your server (framework, banking, garage, housing bridges) — see [Configuration](./Installation/configuration).
 6. Run the offline test suite before going live (`lua5.4 tests/run.lua`).
@@ -48,4 +48,4 @@ Each feature is its own app + server module (`server/modules/*.lua`) + client mo
 - `Config.Debug = false` (`config/config.lua`)
 - Verify `web/dist` was built (`cd web && npm run build`) — it's git-ignored and not shipped pre-built.
 - Set `dnd_phone:fivemanage_key` via convar if Camera/Gallery/media uploads are enabled.
-- Review [Production notes in Release Notes](./Development/release-notes) before shipping to a live server.
+- Keep database migrations up to date after every update+restart (`server/migrations.lua` logs on startup).

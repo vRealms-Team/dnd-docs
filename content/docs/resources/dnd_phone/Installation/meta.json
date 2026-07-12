@@ -1,4 +1,4 @@
 {
   "title": "Installation",
-  "pages": ["index", "dependencies", "database-setup", "configuration", "frontend-setup", "fivemanage-setup"]
+  "pages": ["index", "dependencies", "database-setup", "configuration", "fivemanage-setup"]
 }
