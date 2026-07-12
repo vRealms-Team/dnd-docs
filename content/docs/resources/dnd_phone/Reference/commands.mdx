@@ -42,5 +42,21 @@ Set `Config.Admin.Enabled = false` (`config/admin.lua`) to disable it entirely.
 - **Live identity** — Steam hex, License, License2, and Discord ID are shown for any row whose owner is currently online (these only exist on a live connection, not in the database, so an offline row just shows "Offline").
 - **Change number** — inline edit on any row; validates format and rejects a number already in use by another device, then mirrors the change into the framework's own `charinfo.phone` and notifies the player in-phone.
 
+### Shorter "donation tier" numbers
+Every regular player always gets a full-length number auto-generated on setup (`Config.PhoneNumber.Prefixes` + `Length`, e.g. `(555) 123-456`) — that never changes. If you want to offer shorter, easier-to-remember numbers as a donation/VIP perk (common on FiveM servers, typically 1-6 digits), lower `Config.PhoneNumber.MinCustomLength` (`config/config.lua`) below the standard length:
+
+```lua
+Config.PhoneNumber = {
+    Prefixes = { '555' },
+    Length = 6,
+    Format = '({3}) {3}-{3}',
+    MinCustomLength = 2,  -- opens up 2-6 digit numbers for admin-assigned custom numbers
+}
+```
+
+This **only** affects what the Admin Dashboard's number field (and any other manual number entry) will *accept* — it does not change what `SIM.Generate` produces for a normal player's first setup. So the only way a player ends up with a shorter number is a staff member manually assigning one through the dashboard, e.g. after a donation. By default `MinCustomLength` equals the standard length, meaning no shorter numbers are accepted anywhere until you explicitly lower it.
+
+A shorter number's display just falls back to plain digits instead of the `Format` mask (a fixed-width mask can't fit a shorter number without producing something like `(55) -`), and the pool of possible numbers shrinks fast the shorter you go — 2 digits is only 100 possible numbers, 3 digits is 1,000, and so on (times however many `Prefixes` entries you have) — so pick a length with headroom for how many donors you actually expect.
+
 ## Device/account management without a command
 Anything not covered above (e.g. clearing a stuck `dnd_phone_accounts` row before a player can re-recover) is still done directly via database queries. See [Troubleshooting](../Guides/troubleshooting) for common cases.
