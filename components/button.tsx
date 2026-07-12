@@ -5,6 +5,7 @@ import {
   IconFileText,
   IconDownload,
   IconBrandNpm,
+  IconShoppingCart,
 } from "@tabler/icons-react";
 
 interface Props {
@@ -67,6 +68,14 @@ export function NpmButton(props: Props) {
   return (
     <Button icon={<IconBrandNpm />} side={props.side} link={props.link}>
       {props.label || "Package"}
+    </Button>
+  );
+}
+
+export function TebexButton(props: Props) {
+  return (
+    <Button icon={<IconShoppingCart />} side={props.side} link={props.link}>
+      {props.label || "Buy on Tebex"}
     </Button>
   );
 }
