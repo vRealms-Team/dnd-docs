@@ -23,5 +23,24 @@ Only meant for development — not gated behind `Config.Debug`, so remove or res
 | Open/close phone | **F1** | `Config.OpenKey` (`config/config.lua`) |
 | Camera shutter / flash / etc. | rebindable via ox_lib keybinds | `client/modules/camera.lua` |
 
-## No admin commands
-dnd_phone has no built-in admin/moderation commands — device/account management (e.g. clearing a stuck `dnd_phone_accounts` row before a player can re-recover) is done directly via database queries. See [Troubleshooting](../Guides/troubleshooting) for common cases.
+## Admin command
+
+| Command | Purpose |
+|---|---|
+| `/dnd_phone_admin` (configurable via `Config.Admin.Command`) | Opens the **Admin Dashboard** — a standalone tool, entirely separate from the phone itself (no phone item needed) |
+
+Gated by a FiveM ACE permission (`Config.Admin.Ace`, default `dnd_phone.admin`), re-checked server-side on every single action regardless of what the client shows — grant it in `server.cfg`:
+```ini
+add_ace group.admin dnd_phone.admin allow
+add_principal identifier.license:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx group.admin
+```
+Set `Config.Admin.Enabled = false` (`config/admin.lua`) to disable it entirely.
+
+### What it does
+- **Device list** — every registered device + its active phone number, searchable by number, owner name, serial, or device ID, paginated (`Config.Admin.PageSize`).
+- **Nearby filter** — a toggle that swaps the search/list for just the devices belonging to whoever is online and within `Config.Admin.NearbyRadius` (default 15m) of the admin right now, including the admin's own device automatically.
+- **Live identity** — Steam hex, License, License2, and Discord ID are shown for any row whose owner is currently online (these only exist on a live connection, not in the database, so an offline row just shows "Offline").
+- **Change number** — inline edit on any row; validates format and rejects a number already in use by another device, then mirrors the change into the framework's own `charinfo.phone` and notifies the player in-phone.
+
+## Device/account management without a command
+Anything not covered above (e.g. clearing a stuck `dnd_phone_accounts` row before a player can re-recover) is still done directly via database queries. See [Troubleshooting](../Guides/troubleshooting) for common cases.
