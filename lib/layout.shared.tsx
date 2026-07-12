@@ -1,7 +1,7 @@
-import { BookIcon, FileQuestion, ScrollText } from "lucide-react";
+import { BookIcon, FileQuestion, ScrollText, ShoppingBag } from "lucide-react";
 import { IconBrandDiscord } from "@tabler/icons-react";
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
-import { appName, gitConfig, discordUrl } from "./shared";
+import { appName, gitConfig, discordUrl, tebexUrl } from "./shared";
 
 export function baseOptions(): BaseLayoutProps {
   return {
@@ -35,6 +35,13 @@ export function baseOptions(): BaseLayoutProps {
         text: "Changelog",
         url: "/docs/changelog",
         icon: <ScrollText />,
+        on: "all",
+      },
+      {
+        type: "main",
+        text: "Store",
+        url: tebexUrl,
+        icon: <ShoppingBag />,
         on: "all",
       },
       {
