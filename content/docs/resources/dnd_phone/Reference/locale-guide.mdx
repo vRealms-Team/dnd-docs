@@ -1,0 +1,48 @@
+---
+title: Locale Guide
+---
+
+dnd_phone has **two parallel locale layers**, both currently supporting **English (`en`)** and **Indonesian (`id`)**, and both driven by the same per-player choice.
+
+## 1. Lua / server-pushed notifications (`config/locales.lua`)
+Used for anything the Lua side sends directly — phone push notifications, ox_lib toasts, in-world text.
+
+- `Utils.T(key, ...)` — translates using the CURRENT CLIENT's `Config.Locale` (correct on the client, since `Config` is a separate table per connected client).
+- `Utils.TIn(lang, key, ...)` — translate given an explicit language.
+- `Utils.TFor(identifier, key, ...)` (**server-only**) — looks up `identifier`'s OWN saved `dnd_phone_devices.settings.language` via a DB query and translates in that language, falling back to `Config.Locale`. Used at every server-side `TriggerClientEvent('dnd_phone:client:phoneNotify', ...)` call site that notifies someone OTHER than the calling player (bank transfer recipient, mail claim, cab tip, etc.) — so each recipient sees their own push notification in their own chosen language, not the server's global default or the sender's.
+
+`client/state.lua`'s `State.SetDevice` / `State.SetSetting` also mirror the player's saved language into `Config.Locale` on their own client whenever it changes, so every existing `Utils.T()` call site (emotes, low-battery notices, etc.) automatically follows that player's language with no per-call-site changes needed.
+
+## 2. Web UI (`web/src/lib/i18n.ts`)
+Drives every app's on-screen text — this is the layer that makes the Settings > Language toggle actually change the whole UI, not just a couple of screens.
+
+- `DICT` — a flat object mapping string keys to `{ en, id }` pairs, with `%s`/`%d` placeholder substitution.
+- `translate(lang, key, ...args)` — the core lookup/format function.
+- `useT()` (`web/src/hooks/useT.ts`) — a React hook: `const t = useT();` inside any component, then `t('some_key', arg1, arg2)`. Reads the current language from `useSettingsStore`.
+- For code OUTSIDE a component (a plain helper function, e.g. a status-label formatter called from inside a `.map()`), pass `lang: Lang` in explicitly and call `translate(lang, key)` directly — hooks can't be called outside components.
+
+### Key naming convention
+`<app>_<description>`, snake_case — e.g. `bank_transfer`, `cab_delivery`, `job_tab_emergency`, `housing_key_holders`.
+
+### Adding a new translatable string
+1. Add the key to `DICT` in `web/src/lib/i18n.ts` with both `en` and `id` values.
+2. In the component, call `const t = useT();` once at the top (if not already present) and use `t('your_key')` in place of the hardcoded string.
+3. Watch for **variable shadowing**: a `.map((t) => ...)` loop variable named `t` shadows the `t()` translate function inside that callback's scope — rename the loop variable (e.g. `t` → `tx`, `trip`, `th`) before adding `t('key')` calls inside it.
+
+## Configuring the default / available languages
+```lua
+-- config/config.lua
+Config.Locale = 'en'   -- server-wide default before a player picks one in Setup Wizard/Settings
+```
+```lua
+-- config/locales.lua
+Locales = {
+    en = { ... },
+    id = { ... },
+    -- add more languages here; mirror the same keys on both the Lua and
+    -- web/src/lib/i18n.ts sides for full coverage
+}
+```
+
+## Where the language is stored
+Per-device, in `dnd_phone_devices.settings.language` (JSON), set via the Setup Wizard's Language step or Settings > Language. Both locale layers (Lua and web) read from this same saved value — there's no separate server-wide-only or web-only setting.

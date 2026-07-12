@@ -1,0 +1,27 @@
+---
+title: Commands
+---
+
+## Player commands
+| Command | Purpose |
+|---|---|
+| `/phone` (configurable via `Config.OpenCommand`) | Open/close the phone (also bound to `Config.OpenKey`, default **F1**) |
+
+Set `Config.OpenCommand = false` in `config/config.lua` to disable the command and rely on the keybind only.
+
+## Debug / test commands
+Only meant for development — not gated behind `Config.Debug`, so remove or restrict them on a live server if you don't want players triggering test notifications/calls themselves.
+
+| Command | File | Purpose |
+|---|---|---|
+| `/dnd_testnotif [kind]` | `client/notifications.lua` | Fire a sample in-phone push notification |
+| `/dnd_testcall` | `client/modules/calls.lua` | Simulate an incoming call to yourself |
+
+## Keybinds
+| Action | Default | Config |
+|---|---|---|
+| Open/close phone | **F1** | `Config.OpenKey` (`config/config.lua`) |
+| Camera shutter / flash / etc. | rebindable via ox_lib keybinds | `client/modules/camera.lua` |
+
+## No admin commands
+dnd_phone has no built-in admin/moderation commands — device/account management (e.g. clearing a stuck `dnd_phone_accounts` row before a player can re-recover) is done directly via database queries. See [Troubleshooting](../Guides/troubleshooting) for common cases.

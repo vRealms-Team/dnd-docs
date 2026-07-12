@@ -1,0 +1,96 @@
+---
+title: Configuration
+---
+
+All configuration lives in `config/` and is kept **open** (`escrow_ignore`) for server owners, even if the rest of the resource is sold under escrow.
+
+| File | Purpose |
+|---|---|
+| `config.lua` | Debug, locale, open key/command, `Config.Features` master toggles |
+| `frameworks.lua` | Framework selection/auto-detection (Qbox/QBCore/ESX/custom) |
+| `inventory.lua` · `voice.lua` · `media.lua` | Core integrations (ox_inventory, pma-voice, Fivemanage) |
+| `banking.lua` · `garage.lua` · `housing.lua` | Optional integrations (Renewed, JG, BCS) |
+| `charging.lua` · `camera.lua` | Battery/charging stations, Service Station repair, camera |
+| `props.lua` | Phone models (iOS/Android/custom), dimensions, hand props |
+| `apps.lua` | App registry — built-in + custom (internal or iframe) apps, job/grade gating |
+| `locales.lua` | UI strings / supported languages |
+| `advanced.lua` | Rate limits, input limits, caching, logging |
+| `advertise.lua` · `birdie.lua` · `cab.lua` · `darkchat.lua` · `dataplan.lua` · `economy.lua` · `gps.lua` · `jobs.lua` · `mail.lua` · `notepad.lua` · `currency.lua` · `customization.lua` | Per-app settings |
+
+## General (`config.lua`)
+```lua
+Config.Debug = true              -- verbose [dnd_phone] logs, client+server — set false in production
+Config.Locale = 'en'             -- default UI language (must exist in config/locales.lua)
+Config.OpenKey = 'F1'            -- keybind to open the phone
+Config.OpenCommand = 'phone'     -- command to open the phone (false to disable)
+
+Config.Features = {
+    contacts = true, calls = true, messages = true, gallery = true, camera = true,
+    charging = true, banking = true, garage = true, housing = true, jobs = true,
+    darkchat = true, ecomarket = true, mail = true, birdie = true, cab = true,
+    gps = true, notepad = true, calculator = true, advertise = true,
+    simcard = true, store = true,
+    -- disable a feature to hide its app and skip its server logic entirely
+}
+```
+
+## Framework (`frameworks.lua`)
+```lua
+Config.Framework = 'auto'   -- 'auto' | 'qbox' | 'esx' | 'custom'
+Config.FrameworkDetect = {
+    { resource = 'qbx_core',    bridge = 'qbox' },
+    { resource = 'qb-core',     bridge = 'qbox' },
+    { resource = 'es_extended', bridge = 'esx'  },
+}
+```
+`'auto'` checks each entry in order and uses the first bridge whose target resource is running. Provide your own logic in `client/bridge/framework/custom.lua` + `server/bridge/framework/custom.lua` for anything else.
+
+## Media / Fivemanage (`media.lua`)
+```lua
+Config.Media = {
+    Bridge = 'auto',                                    -- 'fivemanage' | 'custom' | 'auto'
+    FivemanageKey = GetConvar('dnd_phone:fivemanage_key', ''),
+    FivemanageUrl = 'https://api.fivemanage.com/api/image',
+    MaxSizeKb = 8192,
+}
+```
+Set the key via convar (`server.cfg`) rather than committing it to `media.lua`:
+```ini
+set dnd_phone:fivemanage_key "YOUR_KEY"
+```
+See [FiveManage Setup](./fivemanage-setup).
+
+## Banking (`banking.lua`)
+```lua
+Config.Banking = {
+    Enabled = true,
+    Bridge = 'auto',              -- 'renewed' | 'custom' | 'auto'
+    Resource = 'Renewed-Banking',
+    MinTransfer = 1,
+    MaxTransfer = 1000000,
+    StoreHistory = true,          -- mirror into dnd_phone_bank_history
+    JobAccounts = {
+        Enabled = true,
+        MinWithdrawGrade = 0,
+        MinWithdrawGradeByJob = { -- ambulance = 7, police = 9 },
+        },
+    },
+    GangAccounts = { Enabled = true, --[[ same shape as JobAccounts ]] },
+    -- CustomAccounts: server-owner-curated shared "Business" accounts, gated
+    -- by an identifier allow-list and/or job/gang.
+}
+```
+
+## Job / Dark Chat / Economy soft-integrations
+```lua
+Config.JobApps = { Resource = 'dnd_jobmanagement' }   -- server/modules/jobmanagement.lua
+Config.DarkChat = { Resource = 'dnd_blackmarketplace' } -- server/modules/darkchat.lua
+Config.EcoMarket = { Resource = 'dnd_economy' }         -- server/modules/economy.lua
+```
+All three wrap their export calls in `pcall` — if the target resource isn't running, the related tabs/apps just report themselves unavailable instead of erroring.
+
+## Locale / i18n
+`config/locales.lua` defines the Lua/server-side notification strings per language. The web UI has its own parallel dictionary (`web/src/lib/i18n.ts`) driving every app's on-screen text. See [Locale Guide](../Reference/locale-guide) for how the two connect.
+
+## Escrow strategy
+`fxmanifest.lua`'s `escrow_ignore {}` block keeps `config/*.lua`, both bridges' `custom.lua` files, `install/database.sql`, `README.md`, `LICENSE`, and `docs/**/*` open even under FiveM's escrow encryption, so buyers can still configure/extend the resource without needing the source.

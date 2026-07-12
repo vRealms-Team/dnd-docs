@@ -1,0 +1,58 @@
+---
+title: Testing Checklist
+---
+
+## Offline (no server needed)
+```bash
+lua5.4 tests/run.lua      # logic + bridge + endpoint suite
+cd web && npm run build   # type-check (tsc) + bundle the UI
+```
+Run both before every release/PR — see `docs/08_TESTING_AND_SECURITY.md` in the resource repo for the full internal test-plan writeup.
+
+## Before selling or deploying to production, smoke-test at least
+
+### Core
+- Setup Wizard: fresh device, model pick, language, passcode, appearance
+- Account recovery: forgot-password → security question → new password
+- Lost item → "Pulihkan HP Saya" restores the same number + data
+
+### Communication
+- Contacts: add/edit/delete/favorite/block/search
+- Phone: outgoing/incoming call, mute, Hide My Number, call log
+- Messages: private + group thread, image/location share, delete
+- Mail: send with/without money attachment, claim, star, trash/restore
+- Birdie: post/reply/like/repost/follow, photo attach (Gallery + fresh Camera)
+- Dark Chat: thread list/send (with `dnd_blackmarketplace` running)
+
+### Money
+- mBanking: personal transfer, job/gang account transfer (both directions), saved payees, refund-on-failure, push notifications for sender + receiver
+
+### Vehicles / Property
+- Garage: list, Locate (parked / out / impounded), Valet
+- Property: list, GPS waypoint, lock state, key-holder count
+
+### Utility apps
+- GPS: save/delete waypoint, set-as-waypoint
+- Notepad: create/edit/delete note with photo
+- Calculator: basic operations
+- My Sim: purchase/extend data plan, WiFi zone detection
+- Advertise: post/boost/delete, "Jasa Delivery" → Cab deep link
+- Economy Market: agency price/trend display (with `dnd_economy` running)
+- Job: emergency report, apply, HRD roster/review (with `dnd_jobmanagement` running)
+- Downtown Cab Co.: ride + delivery request, accept/decline, full trip lifecycle, tip
+
+### Battery / charging / repair
+- Passive drain + low-battery notification
+- Charging station (docked model) + powerbank
+- Service Station: phone repair, powerbank repair, restore account, restore device, switch OS — verify the DB actually updates, not just the in-game animation
+
+### i18n
+- Switch language in Settings — verify text changes across MULTIPLE apps, not just the shell
+- Server-pushed notifications (transfer received, mail claimed, cab tip) render in the RECIPIENT's language, not the sender's
+
+## Multiplayer validation
+Use at least 2 players (`Config.Debug` relaxes some self-testing restrictions, e.g. Cab solo-testing, but production behavior needs real pairs) for:
+- Calls, Messages, mBanking transfers, Cab trips, Mail, Contacts share-to-nearby, Birdie follows/likes
+
+## Production readiness
+See [Release Notes](../Development/release-notes) for version-specific "operational notes" and [Troubleshooting](./troubleshooting) for known gotchas.

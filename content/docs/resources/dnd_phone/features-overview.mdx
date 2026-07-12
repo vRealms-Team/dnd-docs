@@ -1,0 +1,55 @@
+---
+title: Features Overview
+---
+
+`dnd_phone` ships 20+ apps, all individually toggleable via `Config.Features` (`config/config.lua`). Below is the full catalog.
+
+## Core / System
+- **Setup Wizard** — device creation, model (iOS/Android) pick, language, passcode, appearance, performance.
+- **Lock Screen** — OS-differentiated (iOS large thin clock / Android bold centered clock + uppercase date), clock position/style options, notification history stack (up to 4).
+- **Home Screen** — real app icon artwork, press-and-hold jiggle reorder mode (like iOS/Android), unread badge dots, app grid + dock.
+- **Control Center** — pull-down quick settings (Airplane/Dark mode, brightness/volume, notification shade with history + "Clear all"), iOS Camera quick-launch, OS-differentiated styling (frosted glass pill tiles vs flat Material tiles).
+- **Settings** — native-OS-styled grouped cards: dark mode, airplane mode, wallpaper (presets + custom URL, separate lock-screen wallpaper, blur/pan/zoom), ringtone + notification sounds (separate packs, with preview), volume, brightness, accent color theme, language, account credentials, owner name + copy-number.
+- **Store** — install/uninstall (show/hide) other apps from the home screen/dock; sidebar category tabs (Finance/Business/Property/Social Media/Transportation).
+
+## Communication
+- **Phone** (dialer) — keypad, call via `pma-voice`, incoming/outgoing/active call overlay, call logs, "Hide My Number" toggle, mute, voice activity indicator, Dynamic Island live call pill (iOS).
+- **Messages** — per-device threads, text/image/location share, group chats (create/rename/add member/change photo), delete message/conversation, unread counts, read receipts, online delivery, attachment menu (location/contact/camera/gallery).
+- **Contacts** — CRUD, favorite, block, search, own-profile card, share-to-nearby.
+- **Mail** — send/receive with optional money attachment, claim, star, trash/restore, permanent delete.
+- **Dark Chat** — bridged to `dnd_blackmarketplace`'s `darkchat_*` exports; org-scoped messaging threads.
+- **Birdie** — Twitter/X-style social app: posts, replies (with the full formatting toolbar), likes, reposts, follows, profile editing, photo attach (Gallery or fresh Camera capture), per-account notification scope (All/Following/Off).
+
+## Media
+- **Camera** — real live viewfinder (`application/x-cfx-game-view`), front/back toggle, flash, aspect-ratio picker (1:1/3:4/9:16/Full), filters baked into the saved photo, upload via Fivemanage.
+- **Gallery** — captured/saved photos, favorite, delete.
+
+## Money
+- **mBanking** — myBCA-inspired UI: personal/job/gang/custom "organization" account switcher, hide/show balance, transfer by phone number or raw identifier, saved payees, in-phone confirmation before sending, refund-on-failure, push notifications for sent/received transfers, mirrored into Renewed Banking's own statement.
+
+## Vehicles / Property
+- **Garage** — vehicle list (JG Advanced Garages), real display names, garage label, Out/Parked/Impounded status, Locate (live position → garage fallback → notification), Valet.
+- **Property** — BCS Housing–backed list, GPS waypoint, lock state, key-holder count, complex/area, payment type (Sale/Rent), owned-vs-key-holder distinction.
+
+## Utility apps
+- **GPS** — bookmark current position with a label + optional photo, tap to set a real waypoint.
+- **Notepad** — title + description notes with an optional photo.
+- **Calculator** — purely client-side, standard iOS/Android-style operations.
+- **My Sim (SIM Card)** — mobile data plan purchase/status + WiFi zone detection; gates internet-dependent apps; foundation for a future dead-signal-zone system.
+- **Advertise** — player classifieds board (buy/sell/jasa listings), "Boost" to the top of the feed, deep-links into Cab's delivery flow ("Jasa Delivery").
+- **Economy Market** — read-only price/trend viewer for one `dnd_economy` agency (sparkline, demand badges, stock).
+- **Job** — emergency report, apply for a job, HRD management (on-duty staff roster, application review), threaded staff replies ("Pesan Masuk"), bridged to `dnd_jobmanagement`'s exports.
+- **Downtown Cab Co.** (Driver + Customer apps) — ride or delivery trip requests, accept/decline with countdown, live status (searching → matched → in_progress → completed), tips, standalone taxi-meter HUD overlay (visible outside the phone while On Duty), trip history, street-name resolution.
+
+## Battery, charging & repair
+- Battery drain + health wear (passive + water damage), docked charging model (phone locked to its station while charging), granular charge ticks, powerbank item (charge/health metadata), charging animation + bolt indicator, low-battery/low-health push notifications, dead-battery lock screen.
+- **Service Station** — job-gated standalone tool (not the phone itself) for repairing/restoring a **customer's** dropped-off phone or powerbank: battery repair, account credential reset, device restore (move identity to a blank phone), OS switch — each with a mechanic animation + progress bar and a real cost charged to the device owner.
+
+## UX foundations
+- Use the phone while walking; cursor input without game-keybind interference.
+- Configurable open/call emotes + hand prop, with a watchdog that re-applies if GTA silently cancels the animation.
+- Centralized design system (`web/src/theme`): OS-differentiated look (iOS pill radius + green toggles vs Android Material radius + blue toggles) applied automatically to every app.
+- Phone slides up/down when opening/closing, with a "peek" state for incoming notifications/calls while closed.
+- Full **i18n** — every app's UI text follows the Settings > Language toggle; see [Locale Guide](./Reference/locale-guide).
+
+See [Exports & Events](./Reference/exports-events) for the full server API surface behind these apps.

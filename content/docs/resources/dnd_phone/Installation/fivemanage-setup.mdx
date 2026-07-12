@@ -1,0 +1,35 @@
+---
+title: FiveManage Setup
+---
+
+Fivemanage powers Camera capture and every in-app photo upload (Gallery, Birdie, Messages image attachments, GPS/Notepad/Advertise photos). It's optional — features that need it just fail gracefully with an in-app error if it isn't configured (see [Troubleshooting](../Guides/troubleshooting)).
+
+## 1. Get a Fivemanage API key
+Sign up at [fivemanage.com](https://fivemanage.com) and generate an image-upload API key.
+
+## 2. Set the key via convar
+Do **not** commit the key to `config/media.lua` — set it in `server.cfg` instead:
+```ini
+set dnd_phone:fivemanage_key "YOUR_KEY"
+```
+`config/media.lua` reads it via `GetConvar('dnd_phone:fivemanage_key', '')`.
+
+## 3. Install `screenshot-basic`
+Camera capture needs `screenshot-basic` running alongside Fivemanage:
+```ini
+ensure screenshot-basic
+```
+
+## 4. Verify
+```lua
+Config.Media = {
+    Bridge = 'auto',   -- resolves to 'fivemanage' automatically once the key is set
+    FivemanageKey = GetConvar('dnd_phone:fivemanage_key', ''),
+    FivemanageUrl = 'https://api.fivemanage.com/api/image',
+    MaxSizeKb = 8192,  -- reject captures larger than this before upload
+}
+```
+Open Camera in-game and take a photo. If it fails, the app now shows the reason inline (e.g. *"Resource screenshot-basic belum jalan di server."*, *"Kamera belum dikonfigurasi..."*) instead of doing nothing — read [Troubleshooting](../Guides/troubleshooting) for what each message means.
+
+## Custom media bridge
+If you don't want to use Fivemanage, implement your own upload flow in `client/bridge/media/custom.lua` + `server/bridge/media/custom.lua` and set `Config.Media.Bridge = 'custom'`.

@@ -1,0 +1,51 @@
+---
+title: Getting Started
+---
+
+import ResourceLinks from "@/components/resource-links";
+
+<ResourceLinks repo="dnd_phone" />
+
+This documentation covers setup, configuration, and internals of the **dnd_phone** resource.
+
+## What the resource does
+`dnd_phone` is a modular, escrow-ready phone system for FiveM. It's built on a config-driven **bridge pattern** — framework, inventory, voice, banking, garage, and housing are all swappable without touching core logic — with a React + TypeScript NUI (Vite + Mantine + Zustand).
+
+Unlike most phone scripts, dnd_phone is **device-centric, not player-centric**: identity (number, contacts, messages, settings, …) lives on the physical `phone` item's `device_id`, not on the player. Losing the item means losing the phone; a role-play-friendly account/recovery system lets a player re-link a new item back to their previous device.
+
+## Highlights
+- **Bridge pattern** — swap framework (Qbox/QBCore/ESX), inventory, voice, banking, garage, housing without touching core logic; unsupported targets fall back to a `custom.lua` bridge you fill in yourself.
+- **Config-driven** — everything tunable from `config/*.lua`, kept open (`escrow_ignore`) for server owners even when the rest of the resource is escrowed.
+- **Security-first** — every NUI endpoint goes through a secured wrapper (`Security.Callback`/`Security.NetEvent`): server-side ownership checks, input validation/sanitization, and per-action rate limiting.
+- **20+ apps** — see [Features Overview](./features-overview) for the full catalog.
+- **i18n** — the entire UI (all apps, not just the shell) is translatable; see [Locale Guide](./Reference/locale-guide).
+
+## Core workflows
+
+### Device setup & recovery
+1. Player opens the phone with no device set up on their current `phone` item → Setup Wizard.
+2. If this identifier already has a phone account (lost/replaced item), the wizard offers **"Pulihkan HP Saya"** (recover — re-links the item to the most recent previous device, restoring the same number and data) alongside **"Setup sebagai HP Baru"** (start fresh).
+3. A fresh setup creates a `device_id` + serial, assigns/generates a phone number, and walks through model (iOS/Android)/language/passcode/appearance/performance steps.
+4. The assigned number is mirrored into the framework's own player record where one exists (Qbox/QBCore's `charinfo.phone`) so other resources reading the framework's number see the same one dnd_phone assigned.
+
+### Account & password recovery (role-play feature, not a real credential system)
+1. The first time a player sets up a phone, they create one persistent email/password + security question, scoped to their identifier (survives losing the phone item).
+2. Forgot password → answer the security question → set a new password.
+3. Credentials are stored in **plain text** (`dnd_phone_accounts`) — an explicit server-owner decision, since this is a role-play recovery feature, not a real auth system, and DB admins already have full access to every other table.
+
+### Messaging / calls / banking / cab / etc.
+Each feature is its own app + server module (`server/modules/*.lua`) + client module (`client/modules/*.lua`), gated by `Config.Features` and its own `config/<feature>.lua`. See [Features Overview](./features-overview) for the full list and [Exports & Events](./Reference/exports-events) for the endpoint reference.
+
+## Recommended first steps
+1. Install dependencies — see [Dependencies](./Installation/dependencies).
+2. Import/verify the database schema — see [Database Setup](./Installation/database-setup).
+3. Build the frontend — see [Frontend Setup](./Installation/frontend-setup).
+4. Register the `phone` item in your inventory — see [Installation](./Installation).
+5. Configure `config/*.lua` to match your server (framework, banking, garage, housing bridges) — see [Configuration](./Installation/configuration).
+6. Run the offline test suite before going live — see [Testing Checklist](./Guides/testing-checklist).
+
+## Production-ready settings
+- `Config.Debug = false` (`config/config.lua`)
+- Verify `web/dist` was built (`cd web && npm run build`) — it's git-ignored and not shipped pre-built.
+- Set `dnd_phone:fivemanage_key` via convar if Camera/Gallery/media uploads are enabled.
+- Review [Production notes in Release Notes](./Development/release-notes) before shipping to a live server.

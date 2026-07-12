@@ -1,0 +1,70 @@
+---
+title: Installation
+---
+
+## Prerequisites
+See [Dependencies](./dependencies) — at minimum `ox_lib` and `oxmysql` must be running.
+
+## Installation Steps
+
+### Step 1: Resource Placement
+Place the `dnd_phone` folder in your server's resources directory:
+```bash
+resources/[local]/dnd_phone
+```
+
+### Step 2: Configure `server.cfg`
+```ini
+ensure ox_lib
+ensure oxmysql
+ensure ox_inventory
+ensure dnd_phone
+```
+Add any optional integrations you use (`pma-voice`, `Renewed-Banking`, `jg-advancedgarages`, `bcs_housing`, `screenshot-basic`) before `dnd_phone`.
+
+### Step 3: Database Setup
+Nothing manual is required — the schema is applied automatically on start:
+- Missing tables are created from `install/database.sql` (all `CREATE TABLE IF NOT EXISTS`).
+- Additive changes (new columns/indexes on existing tables) are applied by idempotent migrations in `server/migrations.lua`.
+
+Updating the resource and restarting keeps an existing database in sync. You may still import `install/database.sql` by hand if you prefer. See [Database Setup](./database-setup) for the full table list.
+
+### Step 4: ox_inventory Items
+Register the `phone` item (required) and `powerbank` item (optional, battery/charging system) from `install/ox_inventory.txt`:
+```lua
+['phone'] = {
+    label = 'Phone',
+    weight = 190,
+    stack = false,
+    close = true,
+    description = 'A smartphone',
+    client = {
+        export = 'dnd_phone.open', -- using the item opens the phone
+    },
+},
+```
+Then restart `ox_inventory`. Put any item images in `ox_inventory/web/images/`.
+
+### Step 5: Build the Frontend
+```bash
+cd web
+npm install
+npm run build      # outputs to web/dist (served by the resource)
+```
+`web/dist` is git-ignored — the phone UI will not load in-game until you build it. See [Frontend Setup](./frontend-setup).
+
+### Step 6: Configuration
+Review `config/*.lua` for your framework/banking/garage/housing choice — see [Configuration](./configuration).
+
+### Step 7: Test Installation
+1. Give a player a `phone` item (e.g. `/giveitem <id> phone 1`).
+2. Open it with **F1** or `/phone` (configurable via `Config.OpenKey` / `Config.OpenCommand`).
+3. Complete the Setup Wizard.
+4. Run the offline test suite — see [Testing Checklist](../Guides/testing-checklist).
+
+### Charging (optional)
+Wire a charger/powerbank item to `exports.dnd_phone:chargePhone(source, 25)`, or configure charging stations in `config/charging.lua`. See [Exports & Events](../Reference/exports-events).
+
+---
+
+Your `dnd_phone` resource is now ready for use.

@@ -1,0 +1,59 @@
+---
+title: Database Setup
+---
+
+Nothing manual is required in normal operation — see [Installation](.). This page documents the schema for reference/troubleshooting.
+
+## Source files
+- `install/database.sql` — full `CREATE TABLE IF NOT EXISTS` schema, applied automatically on resource start.
+- `server/migrations.lua` — idempotent additive migrations (new columns/indexes on existing tables), also applied automatically on every start via `DB.EnsureColumn` / `DB.EnsureIndex` (they inspect the live schema first, so re-running is always safe).
+
+## Tables
+| Table | Purpose |
+|---|---|
+| `dnd_phone_devices` | One row per physical phone device: `device_id`, serial, owner identifier, model, settings (JSON), battery/battery_health, charging state |
+| `dnd_phone_numbers` | Phone number ↔ device_id mapping, avatar |
+| `dnd_phone_contacts` | Per-device saved contacts (favorite/blocked flags) |
+| `dnd_phone_call_logs` | Call history (incoming/outgoing/missed, duration) |
+| `dnd_phone_threads` | Message threads (private + group) |
+| `dnd_phone_messages` | Individual messages (text/image/location), metadata JSON |
+| `dnd_phone_group_members` | Group chat membership |
+| `dnd_phone_gallery` | Saved photos (Camera/Gallery) |
+| `dnd_phone_bank_history` | mBanking transaction history, per `account_id` |
+| `dnd_phone_bank_saved_accounts` | Saved payees |
+| `dnd_phone_installed_apps` | Store app's show/hide state |
+| `dnd_phone_user_preferences` | Per-device UI preferences (notification sound, etc.) |
+| `dnd_phone_accounts` | Account recovery: email/password/security question (plain text), display name |
+| `dnd_phone_mail` | Mail app messages, optional money attachment |
+| `dnd_phone_job_reports` | Job app emergency reports |
+| `dnd_phone_job_report_replies` | Threaded staff replies to job reports |
+| `dnd_phone_birdie_accounts` | Birdie (social app) accounts, notify scope |
+| `dnd_phone_birdie_posts` | Birdie posts/replies |
+| `dnd_phone_birdie_likes` | Birdie likes |
+| `dnd_phone_birdie_reposts` | Birdie reposts |
+| `dnd_phone_birdie_follows` | Birdie follow graph |
+| `dnd_phone_cab_trips` | Downtown Cab Co. trip records (ride/delivery), tips, street names |
+| `dnd_phone_gps_waypoints` | GPS app saved pins |
+| `dnd_phone_ads` | Advertise app classifieds listings |
+| `dnd_phone_notes` | Notepad app notes |
+
+## Notable migrated columns
+Applied automatically, listed here for visibility if you're diffing a manually-imported schema:
+- `dnd_phone_devices`: `battery_health`, `is_charging`, `charging_station` (JSON), `data_plan_expires_at`
+- `dnd_phone_numbers`: `avatar`
+- `dnd_phone_bank_history`: `account_id`
+- `dnd_phone_threads`: `group_id`
+- `dnd_phone_user_preferences`: `preferred_notification_sound`
+- `dnd_phone_contacts`: `email`
+- `dnd_phone_cab_trips`: `note`, `customer_name`, `driver_name`, `tip_total`, `pickup_street`, `dropoff_street`
+- `dnd_phone_accounts`: `display_name`
+- `dnd_phone_birdie_accounts`: `notify_scope`
+
+## No separate tables for
+- Dark Chat (bridged to `dnd_blackmarketplace`'s own tables via exports)
+- Economy Market (read-only, bridged to `dnd_economy`'s own data via exports)
+- Job app duty/salary/roster data (bridged to `dnd_jobmanagement`'s own tables via exports — only emergency reports/replies live in dnd_phone's own tables)
+
+## Metadata storage
+- **Item metadata** (`ox_inventory`): `device_id`, serial number on the `phone` item; `charge`/`health` on the `powerbank` item.
+- **Device settings** (JSON in `dnd_phone_devices.settings`): language, dark mode, wallpaper, sounds, volume, brightness, accent color, etc.

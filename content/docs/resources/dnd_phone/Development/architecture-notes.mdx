@@ -1,0 +1,50 @@
+---
+title: Architecture Notes
+---
+
+## System Overview
+dnd_phone is split into four layers, loaded in this order (see `fxmanifest.lua`):
+
+```
+shared  : config (defines Config) -> shared libs (bridge core, utils, validators, constants)
+client  : bridges -> state/notifications/nui -> feature modules -> main (bootstrap)
+server  : bridges -> db/rate_limit/security -> feature modules -> main
+```
+
+## Bridge pattern
+Every external integration (framework, inventory, voice, media, banking, garage, housing, interaction) is resolved through a small bridge layer rather than hardcoded framework calls scattered through feature code:
+
+- `Config.<Integration>.Bridge = 'auto' | '<specific>' | 'custom'` picks the target.
+- `'auto'` detects the running resource (e.g. `qbx_core` → `qbox` framework bridge) and picks the matching bridge file.
+- Every bridge exposes the same function surface regardless of target (e.g. `Framework.GetJob(source)` works identically whether the underlying framework is Qbox or ESX) — feature modules only ever call the bridge interface, never a specific framework's exports directly.
+- A `custom.lua` file exists for every bridge category so a server owner integrating an unsupported framework/resource has a clear, isolated place to implement it.
+
+## Device-centric model
+Identity lives on the **device** (`dnd_phone_devices.device_id`), not the player:
+- A phone item's `ox_inventory` metadata carries its `device_id`.
+- Contacts, messages, settings, gallery, etc. are all scoped to `device_id`, not `owner_identifier` directly (though `owner_identifier` is what's checked for ownership/billing).
+- Losing the item means losing access to that device's data (by design) — the account/recovery system exists specifically to let a player re-link a NEW item back to their previous device without losing history.
+
+## Security model
+Every NUI-facing endpoint is registered through `Security.Callback` / `Security.NetEvent` (`server/security.lua`), never a raw `RegisterNetEvent`/`lib.callback.register`. This enforces uniformly:
+1. **Identifier resolution** — the calling player's framework identifier is resolved server-side; nothing about "who is asking" is ever trusted from the client payload.
+2. **Rate limiting** — `server/rate_limit.lua`, keyed per action category (`default`, `message`, `transfer`, `call`, `cab`, `contact`, `mail`).
+3. **Ownership checks** — each handler independently re-verifies the caller actually owns the `device_id`/account/trip/etc. it's operating on.
+4. **Input sanitization/validation** — `shared/validators.lua` (string length/format, model names, etc.).
+
+A recurring category of bug this project has fixed multiple times: a handler that mutates the database but never checks the write actually took effect (e.g. `DB.Update`'s affected-row count), silently returning `{ok = true}` to a client that already played a success animation. The established fix pattern (`Charging.Start`, later applied to `ServiceStation.RepairPhone`/`RestoreDevice`/`SwitchOS`) is to check the affected-row count and return `{ok = false, reason = 'db'}` (with an `Utils.Error` log) if the write silently failed.
+
+## NUI communication
+See [Exports & Events](../Reference/exports-events) for the full request/push pattern (`fetchNui` → `RegisterNUICallback` → `Security.Callback`/`NetEvent`, and `TriggerClientEvent` → `RegisterNetEvent` → `SendReactMessage` → `useNuiEvent`).
+
+## Frontend design system
+`web/src/theme/` centralizes an OS-differentiated look (iOS pill radius + green toggles vs Android Material radius + blue/accent toggles) so every app picks up the correct styling automatically from the player's chosen phone model — no per-app redesign needed when a new app is added.
+
+## i18n architecture
+Two parallel locale layers (Lua-side notifications, web UI dictionary) both keyed off the same per-device saved language. See [Locale Guide](../Reference/locale-guide) for the full breakdown, including the `Utils.TFor(identifier, ...)` pattern used so a server-initiated push (e.g. a bank transfer notifying the OTHER party) renders in that recipient's own language, not the sender's or the server default.
+
+## Escrow strategy
+`config/*.lua`, both bridges' `custom.lua` files, `install/database.sql`, and `docs/**/*` are listed in `fxmanifest.lua`'s `escrow_ignore {}` so they stay editable even if the rest of the resource ships escrow-encrypted — server owners can still configure, extend with a custom bridge, and inspect the schema/docs without needing the Lua source.
+
+## Testing
+`tests/run.lua` is an offline Lua test suite (no running FiveM server needed) exercising the logic/bridge/endpoint layer directly. See [Testing Checklist](../Guides/testing-checklist).

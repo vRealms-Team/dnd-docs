@@ -1,0 +1,33 @@
+---
+title: Dependencies
+---
+
+## Required (resource will not start without these)
+- [`ox_lib`](https://github.com/overextended/ox_lib)
+- [`oxmysql`](https://github.com/overextended/oxmysql)
+
+Declared in `fxmanifest.lua`'s `dependencies {}` block.
+
+## Optional (resolved at runtime via the bridge system)
+Nothing else is a hard dependency — every integration below degrades gracefully (falls back to a `custom.lua` bridge, or the related app/feature simply reports itself unavailable) if the target resource isn't running.
+
+| Integration | Target resource | Bridge files | Notes |
+|---|---|---|---|
+| Framework | `qbx_core` / `qb-core` (Qbox family) or `es_extended` (ESX) | `client/bridge/framework/*`, `server/bridge/framework/*` | Auto-detected via `Config.FrameworkDetect`; `custom.lua` for anything else |
+| Inventory | `ox_inventory` | `client/bridge/inventory/ox.lua`, `server/bridge/inventory/ox.lua` | Required for the `phone`/`powerbank` items and Service Station's job stashes |
+| Voice | `pma-voice` | `client/bridge/voice/pma.lua` | Calls; mutes via disabling the PTT control (pma-voice has no self-mute export) |
+| Media uploads | Fivemanage (`dnd_phone:fivemanage_key` convar) | `client/bridge/media/fivemanage.lua`, `server/bridge/media/fivemanage.lua` | Camera capture + Gallery/Birdie/Messages image uploads; also needs `screenshot-basic` running |
+| Banking | Renewed-Banking | `server/bridge/banking/renewed.lua` | mBanking app; QBCore's `qb-management` exports map 1:1 onto Renewed's — see the resource's own migration notes if coming from qb-management |
+| Garage | JG Advanced Garages | `server/bridge/garage/jg.lua` | Garage app; uses `getAllGarages()` for labels/spawn points |
+| Housing | BCS Housing | `client/bridge/housing/bcs.lua`, `server/bridge/housing/bcs.lua` | Property app; uses `GetOwnedHomeKeys` (owned + key-held homes) |
+| Interaction | `ox_target` | `client/bridge/interaction/ox_target.lua` | Charging stations, Service Station stash access; falls back to a proximity-key interaction otherwise |
+| Screenshots | `screenshot-basic` | — | Required alongside Fivemanage for Camera capture |
+| Job app | `dnd_jobmanagement` (`Config.JobApps.Resource`) | `server/modules/jobmanagement.lua` | Wrapped in `pcall` — a missing/stopped resource just makes the relevant Job tabs report unavailable, no hard crash |
+| Dark Chat app | `dnd_blackmarketplace` (`Config.DarkChat.Resource`) | `server/modules/darkchat.lua` | Same soft-dependency pattern as Job |
+| Economy Market app | `dnd_economy` (`Config.EcoMarket.Resource`) | `server/modules/economy.lua` | Same soft-dependency pattern; reads one agency's `GetAgencyMarket` export |
+
+## Frontend build tooling (dev-only, not shipped)
+- Node.js + npm
+- React, TypeScript, Vite, Mantine, Zustand — installed via `web/package.json`
+
+See [Frontend Setup](./frontend-setup) for the build flow.

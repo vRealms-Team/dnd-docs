@@ -1,0 +1,65 @@
+---
+title: Troubleshooting
+---
+
+## Installation
+
+### Phone doesn't open / "You do not have a phone"
+- Confirm you gave the player a `phone` item (`/giveitem <id> phone 1`), and that `ox_inventory` has the item registered (see [Installation](../Installation)).
+- Confirm `web/dist` exists — it's git-ignored, so a fresh clone/update needs `cd web && npm run build` before the UI loads at all (a blank/black NUI is the usual symptom).
+
+### Blank/black NUI on open
+- Almost always an un-built `web/dist` (see above), or `ui_page 'web/dist/index.html'` pointing at a missing file.
+- If it's fully built and still blank, check the F8 console for a JS error — the site's [Architecture Notes](../Development/architecture-notes) covers the NUI communication pattern if you're debugging a custom bridge.
+
+### Missing `ox_lib` / `oxmysql`
+- Resource will not start at all — these are hard dependencies (`fxmanifest.lua`). Ensure both are `ensure`d before `dnd_phone` in `server.cfg`.
+
+## Configuration
+
+### `Config.Debug` left on in production
+Set `Config.Debug = false` in `config/config.lua` — debug mode prints verbose `[dnd_phone]` logs client+server and relaxes some checks (e.g. Cab solo-testing).
+
+### A feature/app isn't showing up
+Check `Config.Features` in `config/config.lua` — each feature has its own toggle; disabling one hides its app on the home screen and skips its server logic entirely.
+
+## Feature-specific
+
+### Camera capture does nothing / silently fails
+As of the current build, capture failures ARE surfaced in-app (previously silent) — read the shown message:
+- *"Kamera belum dikonfigurasi..."* → `dnd_phone:fivemanage_key` convar not set.
+- *"Resource screenshot-basic belum jalan di server."* → `screenshot-basic` not `ensure`d/running.
+- *"Upload foto gagal..."* → check your Fivemanage API key/network.
+See [FiveManage Setup](../Installation/fivemanage-setup).
+
+### Garage shows wrong/no vehicles, or crashes on Qbox
+Some Qbox `player_vehicles` schemas use `garage_id`/`in_garage` instead of `garage`/`state` — `config/garage.lua`'s query already aliases these, but if you're on a heavily customized fork, verify your actual column names match.
+
+### Property (Housing) shows wrong key-holder count, or nothing at all
+BCS Housing installs have been observed returning `HomeObject` fields in at least two different shapes (flat, or nested under `.properties`/`.keys.holders`). `server/bridge/housing/bcs.lua` handles both, reading fields flat-first with a fallback — if you're still seeing wrong counts on an unusual BCS fork, dump `Config.Debug`'s raw export output and compare against that bridge file.
+
+### mBanking shows $0 / wrong balance
+Usually a personal-vs-shared-account mixup with Renewed Banking — confirm you're checking the account tab (Personal vs Job/Gang/Business) that actually holds the balance you expect, and that `Config.Banking.Resource` points at the right resource name.
+
+### Cab request can't be accepted or declined
+Fixed in the current build: declining a request now properly clears the driver's own pending-request UI (`cabRequestExpired`) instead of leaving a stale card on screen that no longer matches the trip's actual server-side state. If you're on an older build and see this, update `server/modules/cab.lua`'s `Cab.Respond`.
+
+### Service Station repair "succeeds" but the DB doesn't reflect it
+The mechanic's animation/progress bar plays client-side BEFORE the server callback even runs, so it always looks successful regardless of the actual result. Current builds check the `UPDATE`'s affected-row count and return `{ok = false, reason = 'db'}` (logged via `Utils.Error`) if the write silently failed — check your server console for `ServiceStation.RepairPhone: UPDATE affected 0 rows...`-style errors, which usually means a migration hasn't run yet (`server/migrations.lua` should apply automatically on restart).
+
+### Battery notifications show decimal percentages
+Fixed in the current build — battery percentages in push notifications (low battery, health warning, powerbank charged) are floored to whole numbers. If you see decimals, update `client/modules/charging.lua`.
+
+## Locale / i18n
+
+### Switching language in Settings doesn't change (most of) the UI
+If you're on a build predating the full i18n rollout, only the shell/core screens were translatable. Update to a current build — every app now reads from `web/src/lib/i18n.ts` via `useT()`. See [Locale Guide](../Reference/locale-guide).
+
+### A recipient sees a notification in the wrong language
+Server-initiated pushes to someone other than the calling player (transfer received, mail claimed, cab tip) must use `Utils.TFor(identifier, ...)`, not `Utils.T(...)` (which reads the SERVER's/CALLER's own `Config.Locale`, not the recipient's saved language). If a custom module you've added shows this symptom, check which helper it's using.
+
+## General debugging tips
+1. Enable `Config.Debug = true` temporarily and check the server console for `[dnd_phone]` logs.
+2. Run `lua5.4 tests/run.lua` — a broken bridge/endpoint usually fails there before it ever reaches a live server.
+3. Confirm `web/dist` is up to date after any `web/src` change.
+4. Cross-check the module's `Config.*` block against [Configuration](../Installation/configuration).

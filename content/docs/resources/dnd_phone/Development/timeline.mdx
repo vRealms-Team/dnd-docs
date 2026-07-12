@@ -1,0 +1,121 @@
+---
+title: Development Timeline
+---
+
+A chronological record of how dnd_phone was built, condensed from the resource's own commit history. For a feature-by-feature snapshot instead of a timeline, see [Features Overview](../features-overview); for version-tagged highlights, see [Release Notes](./release-notes).
+
+## 2026-06-17 — Phase 1 foundation
+- Bridge system (framework/inventory/voice/media/banking/garage/housing), device-centric schema, security wrapper (ownership checks, validation, rate limiting).
+- Core apps: device setup, contacts, calls (pma-voice), messages, gallery + camera, battery/charging, banking, garage, housing, settings, custom apps.
+- Offline test suite (`tests/run.lua`) and security audit; Phase 2 design doc (SIM/identity/security roadmap) written; default OS set to Android.
+- Closed remaining Phase 1 gaps: message location share + deletion, garage valet.
+
+## 2026-06-18 — Stability + integrations pass
+- Fixed transparent-NUI black-screen bugs (multiple iterations — color-scheme handling, background compositing).
+- OS-aware bezel (iPhone vs Samsung look) + custom bezel color picker.
+- Share phone number via `ox_target` (in-person) and NUI share-to-nearest.
+- In-game bugfixes: call status enum, in-phone call UI, SMS contact names, profile photo.
+- Wired banking/garage/housing bridges end to end; fixed bridge load-order re-resolution.
+
+## 2026-06-19 — Diagnostics pass
+- Garage valet off-by-default; added housing/bank diagnostics logging.
+
+## 2026-07-03 — Docs sync, mBanking reskin, design system
+- Docs synced to actual implemented architecture (docs 01–04).
+- Setup locked to `Config.DefaultModel` (dropped the client OS picker for a smoother onboarding).
+- Fixed Renewed personal-vs-shared account $0 bug; housing street name/key-holder display.
+- Fixed "phone couldn't open on fresh connect until resource restart".
+- **mBanking**: job/business account tab, saved payees (number or citizenid), in-phone transfer confirmation, gang "organization" account tab, server-owner-curated custom "Business" accounts.
+- **Design system standardization** + myBCA-inspired mBanking reskin.
+- Fixed a Qbox bridge start-order race reading wrong player data.
+- Garage: status/name/vehicle label. **Housing renamed to Property**, richer home data.
+- Garage/Property: expandable rows, garage waypoint, app header icons.
+- Fixed phone-holding animation cancelling on interior/door transitions.
+- Home screen: real app icon artwork, centered header, Android gesture-strip home nav.
+
+## 2026-07-04 — Push notifications, account recovery, live-test fixes
+- Push notifications reach the player even while the phone is closed (new message, transfer received, contact saved, missed call), OS-styled banners.
+- **Control Center** (quick settings + notification shade) + OS-differentiated app theming.
+- Fixed transfer-into-organization-account gap; **account creation + lost-phone recovery** (email/password/security question) shipped.
+- Phone number synced into the framework's own `charinfo.phone`.
+- mBanking: simplified org-account transfer input, per-job/gang minimum withdraw grade.
+- Fixed Garage column names (Qbox `garage_id`/`in_garage`), Property key-holder over-counting (two separate root-cause fixes against different BCS Housing schema shapes), and moved Property's bridge server-side (matching Garage's already-server-side architecture) after finding the client-side export signature was wrong.
+- Fixed live-test bugs batch: Messages contact-name bug, Camera silent capture failure.
+- Garage: vehicle location tracking + impound notification, in-phone push notification instead of an ox_lib toast.
+- Docked push notifications inside the phone bezel while open (previously always floated over the whole viewport).
+- mBanking: push notifications for sent/received transfers.
+- Fixed org-account → personal-balance transfer (previously one-directional).
+- Push notifications: slide down on arrival / slide up on dismissal (Web Animations API, not CSS transitions).
+- Replaced emoji with real icon assets; OS-differentiated the lock screen.
+
+## 2026-07-05 — Slide animations, Settings redesign, Job app, Messages groups
+- Phone slides up/down on open/close with a **"peek"** state for incoming calls/notifications while closed.
+- **Settings redesigned** to match native OS Settings (grouped cards, expand-in-place); account credentials switched to **plain-text storage** (explicit RP-feature decision, not a real auth system).
+- **Job app** added: emergency report, apply for job, HRD management — bridged to `dnd_jobmanagement`.
+- **Dark Chat app** added, bridged to `dnd_blackmarketplace`'s `darkchat_*` exports.
+- HRD Management switched to an on-duty staff roster view; "Pesan Masuk" tab added for threaded staff replies to emergency reports, with a "Balas via Pesan" shortcut into the real Messages app.
+- Fixed an Apply Job form crash (null numeric field read); added an app-level error boundary.
+- **Messages**: group chats (create/rename/add member/change photo, personal/group tabs).
+- Settings: owner name display + copy-number-to-clipboard; fixed invisible dropdown text (recurring theme this week — Select/Combobox contrast bugs, fixed multiple times across light/dark mode).
+- Added "Share to nearby" contact picker (Control Center + Settings); wallpaper pan/zoom, separate lock-screen wallpaper.
+- Own-profile card in Contacts; quick-save button in Messages.
+- Slide-up animation on lock-screen unlock tap.
+- Ringtones and message/notification sounds split into separate packs.
+- Signal indicator made functional; low-battery push notification + dead-battery lock screen.
+- **Economy Market app** added (price/trend viewer for one `dnd_economy` agency).
+
+## 2026-07-06 — Polish pass, contrast fixes, Camera front toggle
+- Economy Market: category filter chips, then a dropdown.
+- **Dark Mode made to actually theme the whole phone UI** (previously partial).
+- Fixed invisible battery fill bar; Contacts share button routed through the nearby-picker.
+- Fixed multiple Light Mode contrast bugs (status bar, dial pad, setup screen, Android home strip).
+- Camera: front/back toggle added.
+- Contact names shown for calls/notifications; call mute + voice activity indicator.
+- Fixed incoming-call mis-tap unlocking the lock screen; caught shell-level crashes.
+- Added a capture timeout so a failed/crashed photo upload can't hang the phone.
+- Camera R&D: true live passthrough viewfinder attempt (transparent cutout to the game render), fixed packet-serialization upload crash, switched front camera to GTA's built-in `CellCamActivateSelfieMode`, fixed a brightness-filter graying bug, ultimately abandoned the passthrough approach for an auto-refreshing still preview.
+
+## 2026-07-07 — Camera redesign, Setup Wizard steps, Dynamic Island
+- Multiple phone-UI references pulled in for comparison (z-phone, lb-phone, gks-phone, hight_phone).
+- Camera: real live viewfinder via `application/x-cfx-game-view` (from analyzing `hight_phone`), fixed a squashed-viewfinder `<object>` sizing bug, landscape toggle now rotates the whole phone mockup, real aspect-ratio picker (1:1/3:4/9:16/Full).
+- Fixed a broken Open/Call emote (a custom `.ycd` pack was overriding the vanilla `cellphone@` dict) — later replaced the custom typing-emote pack with a real vanilla clip entirely.
+- **Setup Wizard**: added Language/Passcode/Appearance/Performance steps for a fresh device.
+- "Hide My Number" dialer toggle.
+- **Dynamic Island** (iOS): minimize an active call into a live status pill, later an expanded Live Activity card.
+- Wallpaper blur slider, pannable/zoomable avatar, gallery pickers; debug commands for notifications/calls.
+- **Control Center**: real iOS/Samsung reference layouts, follows Dark/Light Mode.
+
+## 2026-07-08 — Home reorder, theming, Mail + Birdie apps
+- Home screen: press-and-hold jiggle reorder mode (iOS/Android-style).
+- Lock screen clock: position + style options, live preview while editing.
+- **Theme**: preset accent color picker (Settings > Display), also driving Mantine component colors.
+- Fixed call mute for real: pma-voice has no self-mute export at all — implemented by disabling the PTT control instead.
+- **Mail app** added (referenced from `high_phone`); mBanking visual reskin.
+- Account email domain locked to `Config.Mail.Domain`; fixed a Mail crash on non-string `created_at`.
+- **Birdie app** added (Twitter/X-style social app) — then iterated heavily same-day: share to saved contacts, violet→cyan brand restyle, in-app fresh-photo capture via a Camera round trip, a flex-shrink layout bug fix, hidden-but-scrollable feed scrollbar, full reply view (original post + inline reply box + comments), formatting toolbar + image attach on replies, profile logout button.
+
+## 2026-07-09 — Downtown Cab Co., battery/charging system, 1.0.0, Phase 2 apps
+- **Downtown Cab Co.** built end to end same-day: destination via waypoint or current-location snapshot with solo-test support, debug diagnostics for candidate matching, longer/visible match-timeout countdown in debug mode, real app-id notifications (tap-to-open + auto-peek), optional order note + history for both roles, trip history showing both names, bank history/notify on payout, standalone taxi-meter overlay (redesigned twice — chat-card look, then a real meter readout), in-progress notification-style card + tips + direct messaging, a `Cab.Respond` crash fix (phone numbers live on `dnd_phone_numbers`, not devices), and persisted pickup/dropoff street names.
+- Birdie: per-account notification scope (All/Following/Off).
+- Messages: attachment menu (location/contact/camera/gallery), account display name shown; "Bagikan Nomor" uses the display name too.
+- User-facing text cleanup (no raw `dnd_phone` identifier strings); unread badge dots on home screen + dock.
+- **GPS and Notepad apps** added; **Calculator app** added; icon wiring fixes; thousands separators on the calculator display.
+- **Store app** added (show/hide home screen apps) and **Advertise app** (classifieds board), then same-day: Advertise → Cab delivery integration ("Jasa Delivery"), Store category tabs + detail page.
+- **`dnd_phone` 1.0.0 — Phase 1 complete.**
+- **Battery & charging system** built out same-day: charging animation + bolt indicator, durable powerbank item (charge/health metadata, station recharge, job-gated repair), phone battery health (passive wear, water damage, job-gated repair), map blips for charging stations, live battery/health in Settings and Control Center, granular 1%-per-10s charging with debug logging, docked charging model (phone locked to its station while charging), several sequential bugfixes around `is_charging` type coercion, stale `device_id` resolution, and a DB-write-silently-failed class of bug (the "surface DB write failure instead of reporting success" fix, later reused for Service Station).
+- **Service Station** built same-day: job-only tool for repairing/restoring a customer's dropped-off phone/powerbank, an "Access Storage" drop-off option restricted to the repair job, mechanic repair-progress animation, Switch OS dropdown fix, a simplified Restore Account flow, an in-page confirm modal (replacing `window.confirm`), and a confirmation mail sent once a player finishes resetting their credentials.
+- Anti-metagaming: blocked minting a second registered number per identifier.
+
+## 2026-07-10 — SIM Card app, i18n rollout, Cab + Service Station bugfixes
+- Fixed a charging emote getting stuck after leaving a station's radius.
+- Store: sidebar category navigation, grid-clipping fixes.
+- **SIM Card app** (later renamed **My Sim**) added: mobile data plan purchase/status + WiFi zone detection — Phase 1 of a planned dead-signal-zone system. Fixed silent purchase failures, added a WiFi signal indicator, wired purchase → phone notification + bank history + Control Center WiFi name, fixed a post-purchase "still shows inactive" display bug.
+- Checklist updated to reflect everything shipped since the 1.0.0 closeout (now 1.6.0).
+- **Full i18n rollout**: `useT()` hook + `web/src/lib/i18n.ts` dictionary foundation, then every app converted in batches — Bank/Birdie/Cab, DarkChat/EcoMarket/Job/Housing, Mail/GPS/Notepad/Advertise, Store/ServiceStation/SimCard/Contacts/Gallery/Garage/Messages/Phone/Camera (Calculator skipped — no translatable text). Lua-side notifications gained a matching per-recipient translate helper (`Utils.TFor`).
+- Fixed battery-percentage notifications showing decimals (floored to whole numbers).
+- Fixed Service Station repair/restore/switch-OS silently "succeeding" without the DB actually updating (added affected-row checks, matching the earlier charging-system fix pattern).
+- Fixed Cab's decline button never clearing the driver's own request card (a stale duplicate NUI-event-subscription block from a prior merge was also cleaned up).
+
+---
+
+This timeline is derived from the resource's commit history and will not automatically stay current — update it alongside [Release Notes](./release-notes) when shipping a new batch of features.

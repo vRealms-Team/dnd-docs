@@ -1,0 +1,50 @@
+---
+title: Frontend Setup
+---
+
+Frontend folder: `web/`
+
+Stack: React + TypeScript + Vite + Mantine (UI components) + Zustand (state).
+
+## Install
+```bash
+cd web
+npm install
+```
+
+## Build (production)
+```bash
+npm run build      # type-checks (tsc) then bundles to web/dist
+```
+The resource loads NUI from `web/dist/index.html` (`fxmanifest.lua`'s `ui_page`). `web/dist` is **git-ignored** — you must run `npm run build` before the phone UI will load in-game, including after every update that touches `web/src`.
+
+## Development (live reload, mocked NUI)
+```bash
+npm run dev
+```
+Opens in a regular browser with sample/mocked NUI data (`debugData()` in `web/src/App.tsx`) so you can iterate on UI without a running FiveM server.
+
+## Structure
+```
+web/
+├─ src/
+│  ├─ apps/       # one folder per phone app (Bank, Birdie, Cab, Messages, ...)
+│  ├─ shell/      # PhoneFrame, StatusBar, AppGrid, NotificationCenter, ...
+│  ├─ stores/     # Zustand stores (per-domain: cabStore, settingsStore, ...)
+│  ├─ hooks/      # useNuiEvent, useT (i18n), ...
+│  ├─ lib/        # nui.ts (fetchNui), i18n.ts, currency.ts, format.ts, ...
+│  └─ theme/      # centralized OS-differentiated design system
+└─ dist/          # build output (git-ignored, served by the resource)
+```
+
+## NUI communication pattern
+- **Client → server**: `fetchNui(action, data)` (`web/src/lib/nui.ts`) posts to a `RegisterNUICallback` in `client/modules/*.lua`, which calls a `lib.callback.await(...)` server endpoint (`Security.Callback`) or fires a `TriggerServerEvent` (`Security.NetEvent`).
+- **Server → client → UI**: `TriggerClientEvent('dnd_phone:client:...')` in a server module → a `RegisterNetEvent` in the matching `client/modules/*.lua` → `SendReactMessage(action, data)` → the UI's `useNuiEvent(action, handler)` hook (a `window.addEventListener('message', ...)` wrapper).
+
+See [Exports & Events](../Reference/exports-events) for the full endpoint reference.
+
+## Type-checking without a full build
+```bash
+npx tsc --noEmit -p .
+```
+Useful for a fast correctness check while iterating.
