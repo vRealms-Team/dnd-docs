@@ -60,7 +60,7 @@ Review `config/*.lua` for your framework/banking/garage/housing choice — see [
 1. Give a player a `phone` item (e.g. `/giveitem <id> phone 1`).
 2. Open it with **F1** or `/phone` (configurable via `Config.OpenKey` / `Config.OpenCommand`).
 3. Complete the Setup Wizard.
-4. Run the offline test suite — see [Testing Checklist](../Guides/testing-checklist).
+4. Run the offline test suite (`lua5.4 tests/run.lua`).
 
 ### Charging (optional)
 Wire a charger/powerbank item to `exports.dnd_phone:chargePhone(source, 25)`, or configure charging stations in `config/charging.lua`. See [Exports & Events](../Reference/exports-events).

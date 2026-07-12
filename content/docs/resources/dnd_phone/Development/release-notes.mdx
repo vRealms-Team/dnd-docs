@@ -35,5 +35,5 @@ The changelog's `[0.1.0] — Phase 1 (unreleased)` entry documents the same feat
 - Keep `Config.Debug = false` for production.
 - Rebuild `web/dist` before packaging (`cd web && npm run build`) — it's git-ignored.
 - Verify database migrations applied cleanly after an update+restart (`server/migrations.lua` logs on startup).
-- Run `lua5.4 tests/run.lua` before shipping — see [Testing Checklist](../Guides/testing-checklist).
+- Run `lua5.4 tests/run.lua` before shipping.
 - Prepare escrow packaging separately if selling through Cfx/Tebex — `config/*.lua` and a few other paths are deliberately `escrow_ignore`d (see [Architecture Notes](./architecture-notes)).

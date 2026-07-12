@@ -47,4 +47,4 @@ Two parallel locale layers (Lua-side notifications, web UI dictionary) both keye
 `config/*.lua`, both bridges' `custom.lua` files, `install/database.sql`, and `docs/**/*` are listed in `fxmanifest.lua`'s `escrow_ignore {}` so they stay editable even if the rest of the resource ships escrow-encrypted — server owners can still configure, extend with a custom bridge, and inspect the schema/docs without needing the Lua source.
 
 ## Testing
-`tests/run.lua` is an offline Lua test suite (no running FiveM server needed) exercising the logic/bridge/endpoint layer directly. See [Testing Checklist](../Guides/testing-checklist).
+`tests/run.lua` is an offline Lua test suite (no running FiveM server needed) exercising the logic/bridge/endpoint layer directly.
