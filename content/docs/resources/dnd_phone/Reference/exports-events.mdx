@@ -23,6 +23,18 @@ exports.dnd_phone:chargePhone(source, 25)
 ### `dnd_phone:usePowerbank` (client)
 Wired as the `powerbank` item's `client.export`. Reports success/failure via a toast; server-authoritative (goes through `dnd_phone:powerbank:use`, never trusts the client's own claimed charge amount).
 
+### `dnd_phone:RecordBankHistory(source, identifier, amount, description, direction)` (server)
+Records an external (non-phone) money movement into a player's own mBanking history, so a transaction from another resource (e.g. `dnd_economy`'s bank-paid Buy/Sell) shows up in their phone, not just a silent balance change. This resource's own `BankingBridge.LogTransaction`/Renewed-Banking's `handleTransaction` do **not** reach mBanking's history — `Bank.History` reads from `dnd_phone_bank_history`, a table this resource owns.
+```lua
+---@param source number|nil     -- player server id, used to read a live balance for the stored balance_after (nil is fine — just stores 0)
+---@param identifier string     -- framework identifier (citizenid/license)
+---@param amount number         -- positive integer
+---@param description string    -- shown in the phone's history list
+---@param direction 'in'|'out'  -- 'in' renders green/incoming, 'out' renders red/outgoing
+local ok = exports.dnd_phone:RecordBankHistory(source, identifier, 4200, 'Bought 5x Steel from Ammunation', 'out')
+```
+`ok == false` (no error) if `Config.Banking.StoreHistory` is off or the player has no registered phone device — both are safe no-ops. The actual database write happens in its own thread so this export never yields, which matters if you're calling it from inside your own `lib.callback` handler (a second nested yield across the resource boundary is what caused a hard-to-diagnose `ox_lib` callback-marshalling crash before this was fixed).
+
 ## Public client events (server → client, for other resources)
 
 ### `dnd_phone:client:phoneNotify` (client)
