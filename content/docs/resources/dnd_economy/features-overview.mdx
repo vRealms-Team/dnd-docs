@@ -1,0 +1,59 @@
+---
+title: Features Overview
+---
+
+## Pricing engine
+
+Each agency-item pair tracks a `current_price` computed from a power-law curve against a configurable `target_stock`:
+
+```
+price = base_price * clamp((target_stock / current_stock) ^ sensitivity, floor, ceiling)
+```
+
+- Selling into an agency raises `current_stock` → price drifts down.
+- Buying from an agency lowers `current_stock` → price drifts up.
+- An hourly scheduler decays stock toward the target so prices don't stay pinned forever on an idle economy.
+- Every price move is snapshotted (`dnd_eco_price_snapshots`) for the Market/Dashboard trend sparkline.
+- A manager can **hold** a price (freeze it at its current value, auto-releases after 24h) from the Dashboard.
+
+## Sell flow
+
+- Reached via an ox_target option at the agency's NPC (`/desell` is also available directly).
+- Every agency always tries the **staff-first pending queue** first when staff are on duty for that agency's job — a sale isn't gated by any per-agency setting, it just needs an on-duty handler.
+- No handler accepts within `Config.HumanResponseTimeout` (default 300s), or nobody's on duty at all → falls back to an instant NPC sale.
+- Staff accepting a sale personally earns a commission (`Config.Agencies[id].commission`); an NPC/timeout fallback pays no commission.
+- A per-player, per-item cooldown (`Config.SellCooldown`) prevents spamming the same item.
+
+## Buy flow (multi-item cart)
+
+- Reached via a second ox_target option at the same NPC — opens a dedicated cart NUI, not the sell menu.
+- Browse the agency's live catalog, add several items with individual quantities, see a running grand total, then **checkout once** for the whole cart.
+- A Buy order **always** goes to the pending queue — there's no countdown and no automatic/NPC fallback, because fulfillment needs a staff decision (and optionally prints a document) before it can complete. With zero staff on duty the buyer is simply told to wait; the order stays queued indefinitely.
+- Revenue goes into the agency's **job bank account** via `Renewed-Banking` (`Config.Banking`), separate from the personal cash flow Sell uses.
+
+## Pending review (staff)
+
+- `/depending` opens the Pending NUI with two tabs: **Sell requests** and **Buy orders**.
+- Sell cards show a countdown and Accept/Reject.
+- Buy cards show the full cart (items, quantities, per-line price, total) and require picking a purchase type before Accept unlocks:
+  - **Instansi** — buyer has a job; applies a **discount** to `pricePerUnit`.
+  - **Gang / non-instansi** — buyer doesn't; applies a **markup**.
+  - The ± amount is per-agency and editable from the Dashboard (see below) — it isn't hardcoded.
+- Accepting a Buy order (with `Config.Printer = 'dnd_jobmanagement'`) automatically queues a printable purchase document in `dnd_jobmanagement`'s printer system — no manual step, staff just walk to a printer prop and print it, same as that resource's medical/crime records.
+
+## Dashboard (`/dedashboard`)
+
+Per-agency manager view, access-gated by job + grade (or a `Config.Jobs` government override):
+- Prices/stock table with inline target editing and price-hold toggle.
+- Discord webhook URL for the agency's live market embed.
+- **Buy Price Adjustment** — the ± amount staff apply for instansi/gang, editable live.
+- Recent transactions (Sell + Buy, with in-game character names, direction pill, and system-fallback indicator).
+- Government-access users can also edit an item's economic properties (base price, floor, ceiling, sensitivity, decay) directly — those overrides persist across config syncs.
+
+## Market overview (`/demarket`)
+
+Public, read-only view across every agency: demand classification per item (High/Normal/Low/Oversupplied), price trend, and optionally raw stock numbers if the agency has `publicStock = true`.
+
+## Theming
+
+The NUI's accent colors (buttons, borders, status pills) are driven by `Config.Color` — no CSS editing required. See [Theming](./Guides/theming) for a live preview and a config snippet generator.

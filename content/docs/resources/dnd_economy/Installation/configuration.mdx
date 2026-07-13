@@ -1,0 +1,155 @@
+---
+title: Configuration
+---
+
+Everything lives in `config.lua`, kept open (`escrow_ignore`) even when the rest of the resource is escrowed.
+
+## General
+
+```lua
+Config.Debug = false
+Config.Framework = 'auto'   -- 'auto' | 'qbox' | 'esx'
+Config.MoneyAccount = 'cash'
+Config.Locale = 'en'        -- 'en' | 'id'
+
+Config.SellCooldown = 5           -- seconds, per player+item
+Config.MaxSellPerTransaction = 50
+Config.HumanResponseTimeout = 300 -- seconds — Sell's staff-fallback timeout (Buy has no timeout)
+Config.DecayInterval = 360        -- minutes between decay ticks
+```
+
+## Color (NUI theming)
+
+```lua
+Config.Color = {
+    mainColor      = '#A3E635',
+    mainColorLight = '#D9F99D',
+    buttonColor    = '#65A30D',
+    successColor   = '#22C55E',
+    warningColor   = '#F59E0B',
+    dangerColor    = '#EF4444',
+}
+```
+
+Re-skins the NUI's accent colors without editing CSS — see [Theming](../Guides/theming) for a live preview and a generator that outputs this block ready to paste.
+
+## Currency format
+
+```lua
+Config.CurrencyFormat = {
+    symbol = '$',                 -- '' = none, '$', 'Rp ', etc.
+    position = 'before',          -- 'before' | 'after'
+    useThousandsSeparator = true,
+    thousandsSeparator = ',',
+    decimalPlaces = 0,
+}
+```
+
+Used by `Utils.FormatMoney` anywhere a price is shown outside the NUI itself (the NUI formats client-side) — currently the `dnd_jobmanagement` purchase-document hook.
+
+## Banking (Buy revenue)
+
+```lua
+Config.Banking = {
+    Enabled = true,
+    Bridge = 'auto',            -- 'auto' | 'renewed' | 'custom'
+    Resource = 'Renewed-Banking',
+    StoreHistory = true,        -- mirror deposits into Renewed's own statement UI
+}
+```
+
+## Printer integration
+
+```lua
+Config.Printer = 'dnd_jobmanagement' -- 'dnd_jobmanagement' | 'none'
+```
+
+When set to `'dnd_jobmanagement'`, accepting a Buy order automatically calls that resource's `CreatePurchaseDocument` export, queuing a printable receipt. Set to `'none'` if you don't run `dnd_jobmanagement` — the sale still completes normally either way, this only controls the paperwork step.
+
+## Commands
+
+```lua
+Config.Commands = {
+    sell      = 'desell',
+    dashboard = 'dedashboard',
+    market    = 'demarket',
+    pending   = 'depending',
+    accept    = 'deaccept',
+}
+```
+
+Rename any of these to avoid conflicts with other resources.
+
+## Market / Buy
+
+```lua
+Config.Market = {
+    demandThresholds = { high = 0.5, balanced = 1.0, low = 1.5 },
+    buying = {
+        enabled = true,
+        maxPerTransaction = 50,
+        priceAdjustment = 200, -- default instansi/gang ± amount for a NEW agency row only —
+                                -- after that it's per-agency and Dashboard-editable
+    },
+}
+```
+
+## Jobs (government override)
+
+```lua
+Config.Jobs = {
+    government = 3, -- [jobName] = minGrade — bypasses per-agency manager-grade checks
+}
+```
+
+## Items
+
+```lua
+Config.Items = {
+    paketkayu = {
+        label       = 'Paket Kayu',
+        basePrice   = 1300,
+        sensitivity = 0.6, -- how fast price reacts to stock (power-law exponent)
+        decay       = 0.1, -- % of target lost per decay cycle
+        floor       = 0.2, -- min price as % of base
+        ceiling     = 1.5, -- max price as multiplier of base
+        category    = 'Wood Products',
+    },
+    -- ...
+}
+```
+
+## Agencies
+
+```lua
+Config.Agencies = {
+    ['disnaker'] = {
+        label       = 'Government Agency',
+        job         = 'government',
+        grade       = 2,          -- manager grade required to open the Dashboard
+        commission  = 0.0,        -- personal cut for staff who handle a Sell
+        collection  = 'npc',      -- informational only — Sell always tries pending-first when staff are on duty
+        publicStock = true,
+        decayMode   = 'consume',
+        logWebhook  = '',
+        npc = {
+            coords = vec4(-427.45, 1204.90, 325.76, 201.61),
+            model  = 's_m_m_dockwork_01',
+            target = { distance = 2.0, label = 'Sell Items' },
+        },
+        stash = {
+            id        = 'dnd_eco_stash_disnaker',
+            label     = 'Government Storage',
+            slots     = 200,
+            weight    = 9999999,
+            locations = { vec3(-430.13, 1205.36, 325.76) },
+        },
+        items = {
+            paketkayu = { target = 50000 },
+            -- ...
+        },
+    },
+}
+```
+
+`job` doesn't need to match `dnd_jobmanagement`'s canonical job name — if you also run that resource's purchase-document hook, add a `Config.JobAliases` entry there mapping its canonical name to your raw framework job name (e.g. `government = 'pemerintah'`).

@@ -1,0 +1,15 @@
+---
+title: Commands
+---
+
+All command names are configurable via `Config.Commands`; the defaults are shown below.
+
+| Command | Who | Description |
+|---|---|---|
+| `/desell` | Player | Opens the sell menu directly (normally reached via the agency NPC's ox_target option instead) |
+| `/dedashboard` | Manager | Opens the Dashboard NUI for an agency the player manages (auto-picks if only one, otherwise shows a picker) |
+| `/demarket` | Anyone | Opens the public, read-only Market overview across all agencies |
+| `/depending` | On-duty staff | Opens the Pending NUI (Sell + Buy tabs) — requires being on duty for at least one configured agency's job |
+| `/deaccept <requestId>` | On-duty staff | Accepts a **Sell** request by ID from chat/console instead of the NUI. **Not available for Buy orders** — those require the pending NUI's price-mode toggle (instansi/gang), which a bare command can't supply |
+
+Buy and Sell interactions themselves aren't commands — they're reached via ox_target options at each agency's configured NPC.

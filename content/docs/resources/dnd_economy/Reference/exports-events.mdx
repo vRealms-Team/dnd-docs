@@ -1,0 +1,51 @@
+---
+title: Exports & Events
+---
+
+## Exports `dnd_economy` provides
+
+Open, unauthenticated read-only market data (`integrations/exports.lua`) — the same data `/demarket` already shows any player in-game, filtered per-agency by `publicStock`.
+
+```lua
+-- Full market overview, every agency.
+local overview = exports.dnd_economy:GetMarketOverview()
+-- { agencies = { { id, label, items = {...}, ... }, ... }, generatedAt }
+
+-- A single agency's items only.
+local result = exports.dnd_economy:GetAgencyMarket('disnaker')
+-- { success = true, agency = {...}, generatedAt } or { success = false, reason = 'not_found' }
+```
+
+## Events `dnd_economy` fires
+
+```lua
+AddEventHandler('dnd_economy:purchaseCompleted', function(order)
+    -- order = {
+    --   agencyId, items = { { itemName, itemLabel, quantity, pricePerUnit, total, ... }, ... },
+    --   total, buyerIdentifier, buyerName, handlerIdentifier, handlerName, timestamp,
+    -- }
+end)
+```
+
+Fires once per accepted Buy cart (not once per line item) after `HybridBuy.Accept` successfully executes every line.
+
+## Consuming `dnd_jobmanagement`'s purchase-document export
+
+If `Config.Printer = 'dnd_jobmanagement'`, `dnd_economy` calls this itself at accept time — you don't need to call it yourself unless you're building your own integration:
+
+```lua
+local ok, requestId = exports['dnd_jobmanagement']:CreatePurchaseDocument({
+    issuerSource = handlerSource,      -- staff who accepted the order
+    agencyLabel = 'Government Agency',
+    agencyJobName = 'government',      -- gates who can print it — see dnd_jobmanagement's Config.JobAliases
+    buyerIdentifier = 'ABC123',
+    buyerName = 'John Doe',
+    buyerJobLabel = 'Mechanic',        -- optional, shown next to "Instansi" on the document
+    priceMode = 'instansi' | 'gang',
+    items = { { itemLabel, quantity, pricePerUnit, lineTotal, pricePerUnitFormatted, lineTotalFormatted }, ... },
+    total = 4200,
+    totalFormatted = '$4,200', -- optional; falls back to '$'..total
+})
+```
+
+`ok == true` on success, with `requestId` usable at any `dnd_jobmanagement` printer prop by staff on the agency's job (or `government`). This requires `dnd_jobmanagement` to be running — the call is wrapped in `pcall` on the `dnd_economy` side, so a missing/offline `dnd_jobmanagement` doesn't unwind an already-completed sale, it just skips the document and logs a warning.

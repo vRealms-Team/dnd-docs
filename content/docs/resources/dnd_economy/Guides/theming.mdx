@@ -1,0 +1,29 @@
+---
+title: Theming (Config.Color)
+---
+
+import EconomyColorPreview from "@/components/economy-color-preview";
+
+`dnd_economy`'s NUI reads its accent colors from `Config.Color` at open time and applies them as CSS variable overrides — no CSS editing required. Pick colors below, watch the mock preview update live, then copy the generated config straight into `config.lua`.
+
+<EconomyColorPreview />
+
+## What each key controls
+
+| Key | CSS variable | Used for |
+|---|---|---|
+| `mainColor` | `--c-primary` | Borders, highlights, focus rings, scrollbar thumb |
+| `mainColorLight` | `--c-primary-light` | Glows, gradient light stops, title accent text |
+| `buttonColor` | `--c-secondary` | Button gradient's dark stop |
+| `successColor` | `--c-success` | Accept actions, "well stocked" demand |
+| `warningColor` | `--c-warning` | Price-locked badge, urgent countdown |
+| `dangerColor` | `--c-danger` | Reject actions, "high demand" pill |
+
+Structural surfaces — background, text, borders — aren't themeable through this config; they follow the NUI's own built-in dark/light toggle instead. Only the brand/status accent tokens above are configurable.
+
+## Applying it
+
+1. Pick colors above (or paste hex codes directly into the text fields).
+2. Copy the generated `Config.Color = { ... }` block.
+3. Paste it into your `config.lua`, replacing the existing `Config.Color` block.
+4. Restart the resource — no rebuild needed, this is read fresh from Lua on every NUI open.

@@ -1,0 +1,27 @@
+---
+title: Dependencies
+---
+
+## Required
+
+| Resource | Why |
+|---|---|
+| [`oxmysql`](https://github.com/overextended/oxmysql) | All database access (`MySQL.*` calls) |
+| [`ox_lib`](https://github.com/overextended/ox_lib) | Callbacks, NUI dialogs (input/alert), notifications, `lib.points` for stash zones |
+| [`ox_inventory`](https://github.com/overextended/ox_inventory) | Agency stashes, item transfer, stock reads (`GetStashCounts`/`GetStockCount`) |
+| [`ox_target`](https://github.com/overextended/ox_target) | Sell/Buy interaction points on agency NPCs, stash zones |
+
+## Optional (feature-gated)
+
+| Resource | Enables |
+|---|---|
+| `Renewed-Banking` | The Buy flow — revenue deposits into the agency's job account. Config-gated by `Config.Banking`. |
+| `dnd_jobmanagement` | Auto-queuing a printable purchase document when staff accept a Buy order. Config-gated by `Config.Printer`. |
+
+## Framework
+
+Auto-detected via `Config.Framework = 'auto'` (checks for `qbx_core` then `es_extended`), or force it explicitly to `'qbox'` / `'esx'`.
+
+## Build tooling (dev-time only, not a runtime dependency)
+
+- Node.js + npm — only needed to run `cd web && npm run build` before shipping; the built `web/dist` output is what actually ships.

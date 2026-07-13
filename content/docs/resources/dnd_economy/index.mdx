@@ -1,0 +1,53 @@
+---
+title: Getting Started
+---
+
+import ResourceLinks from "@/components/resource-links";
+
+<ResourceLinks />
+
+This documentation covers setup, configuration, and internals of the **dnd_economy** resource.
+
+## What the resource does
+`dnd_economy` is a dynamic, supply-and-demand economy system for FiveM agencies (government, black market, or any custom job you configure). Prices move on their own — sell into an agency and its price for that item drops; buy from it and the price climbs — driven by a power-law formula against a configurable `target_stock` per item, per agency.
+
+It started as a sell-only price calculator and grew into a small B2B marketplace: agencies can also sell items back to players, fulfillment can be staff-reviewed instead of instant, and a purchase can hand off a printable receipt to `dnd_jobmanagement`.
+
+## Highlights
+- **Live pricing engine** — power-law price curve (`(target/current)^k`), configurable floor/ceiling/sensitivity/decay per item, an hourly decay scheduler, and price snapshots for trend history.
+- **Sell & Buy, both staff-first** — a sale or purchase always tries the pending queue when staff are on duty for the agency's job; Sell falls back to NPC on timeout, Buy has no timeout and waits indefinitely (a purchase needs a document printed before it can be fulfilled).
+- **Multi-item Buy cart** — a dedicated NUI lets a buyer add several items to one cart with a running total and a single checkout, instead of one order per item.
+- **Dashboard NUI** — per-agency price/stock table, target editing, price holds, Discord webhook, recent transactions, and (new) a per-agency Buy price-adjustment amount — all editable live, no restart.
+- **Config-driven theming** — `Config.Color` lets you re-skin the NUI's accent colors without touching CSS; see [Theming](./Guides/theming) for a live preview + config generator.
+- **Optional integrations** — `Renewed-Banking` for Buy revenue (agency job account) and `dnd_jobmanagement` for auto-queuing a printable purchase document when staff accept a Buy order.
+
+## Core workflows
+
+### Selling to an agency
+1. Player interacts with the agency NPC (ox_target) and picks a quantity to sell.
+2. If staff are on duty for that agency's job, the sale goes to the pending queue and a staff member accepts/rejects it from the Pending NUI (`/depending`) or `/deaccept <id>`.
+3. If nobody accepts before `Config.HumanResponseTimeout`, or nobody's on duty, it falls back to an instant NPC sale.
+4. Price recomputes immediately after any sale (stock went up → price drifts down).
+
+### Buying from an agency
+1. Player interacts with the same NPC's Buy option — opens a cart NUI (not the sell menu): browse items, add several with quantities, see a running total, checkout.
+2. Checkout always creates a pending order — no timeout, no instant fallback. If nobody's on duty, the buyer is told to wait; the order stays queued.
+3. Staff review it from the Pending NUI's **Buy** tab, pick a purchase-type ("instansi"/job vs "gang"/non-instansi — applies a configurable ± price adjustment), and accept.
+4. If `Config.Printer = 'dnd_jobmanagement'`, a printable purchase document is queued automatically into that resource's printer system at accept time.
+
+### Dashboard & market overview
+- `/dedashboard` — per-agency manager view: prices, targets, holds, webhook, transactions, Buy price adjustment.
+- `/demarket` — read-only, public-facing overview across all agencies (demand labels, optional stock numbers per `publicStock`).
+
+## Recommended first steps
+1. Install dependencies — see [Dependencies](./Installation/dependencies).
+2. Import the database schema — see [Database Setup](./Installation/database-setup).
+3. Build the frontend (`cd web && npm install && npm run build`).
+4. Configure `config.lua` to match your server (agencies, items, banking, printer integration) — see [Configuration](./Installation/configuration).
+5. Optional: re-skin the NUI's accent colors — see [Theming](./Guides/theming).
+
+## Production-ready settings
+- `Config.Debug = false` (`config.lua`)
+- Verify `web/dist` was built (`cd web && npm run build`) — it's git-ignored and not shipped pre-built.
+- Set `Config.Banking.Enabled = true` with `Renewed-Banking` running if you want Buy enabled — it stays effectively disabled otherwise.
+- Set `Config.Printer = 'none'` if you don't run `dnd_jobmanagement`, or `'dnd_jobmanagement'` to enable the purchase-document hook.

@@ -1,0 +1,36 @@
+---
+title: Database Setup
+---
+
+## Automatic (recommended)
+
+`server/migrator.lua` runs on every resource start and brings the schema up to date on its own:
+
+- **Fresh install** (no `dnd_eco_*` tables yet) → runs `sql/install.sql` and marks every migration as already applied.
+- **Existing schema** → resumes from the last applied migration, tracked in `dnd_eco_schema_versions`.
+- **Legacy `de_*` prefix** (pre-rename) → walks migrations forward from the rename point.
+- **Hand-migrated schema** (tables look current but no version rows exist yet) → creates the version table, then checks each migration's effect against the live schema and marks it applied without re-running it.
+
+Just start the resource — nothing to run manually. Migration failure aborts boot on purpose (booting with a half-migrated schema is worse than not booting).
+
+## Manual
+
+If you'd rather import it yourself: run `sql/install.sql` once against your database. It creates every table this resource needs:
+
+| Table | Purpose |
+|---|---|
+| `dnd_eco_items` | Master commodity list (base price, floor/ceiling/sensitivity/decay) |
+| `dnd_eco_agencies` | Agency config mirror (label, job, collection, commission, Buy price adjustment, webhook) |
+| `dnd_eco_agency_stock` | Per-agency-item runtime state (current price, target stock, price holds) |
+| `dnd_eco_transactions` | Sell + Buy history (`direction` column), buyer/seller/handler identifiers and names |
+| `dnd_eco_player_cooldowns` | Per-player, per-item Sell cooldown |
+| `dnd_eco_price_snapshots` | Price history for trend sparklines |
+| `dnd_eco_schema_versions` | Migration tracking |
+
+## Config vs database
+
+Most agency/item fields are **synced from `config.lua` on every boot** (`server/config_sync.lua`) — label, collection, job, commission, etc. always track your config. A few fields are dashboard-editable at runtime and deliberately **excluded** from that sync so they survive a restart:
+
+- `dnd_eco_agencies.webhook_url`
+- `dnd_eco_agencies.buy_price_adjustment`
+- `dnd_eco_items.overridden` economic properties (base price, floor, ceiling, sensitivity, decay) — only once a government-access user has edited them from the Dashboard.

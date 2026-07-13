@@ -1,0 +1,24 @@
+---
+title: Installation
+---
+
+1. Drop `dnd_economy` into your resources folder.
+2. Install the required dependencies — see [Dependencies](./dependencies).
+3. Import the database schema — see [Database Setup](./database-setup) (or just start the resource once; it auto-migrates on boot).
+4. Build the NUI:
+   ```bash
+   cd web
+   npm install
+   npm run build
+   ```
+   `web/dist` is git-ignored and not shipped pre-built — the resource won't have a working NUI without this step.
+5. Register each agency's stash in your inventory (`dnd_eco_stash_<agencyId>` by default — see `Config.Agencies[id].stash.id`) if your inventory resource requires stashes to be pre-registered.
+6. Configure `config.lua` — see [Configuration](./configuration).
+7. Add `ensure dnd_economy` to your `server.cfg`, after its dependencies.
+
+## Optional integrations
+
+Both are optional — the resource works without either, just with the related feature disabled.
+
+- **`Renewed-Banking`** — required for the Buy flow (`Config.Banking.Enabled = true`). Without it, buying stays effectively disabled (checked at the top of the purchase transaction) rather than silently discarding revenue.
+- **`dnd_jobmanagement`** — required for `Config.Printer = 'dnd_jobmanagement'` (auto-queues a printable document when staff accept a Buy order). Set `Config.Printer = 'none'` if you don't run it.
