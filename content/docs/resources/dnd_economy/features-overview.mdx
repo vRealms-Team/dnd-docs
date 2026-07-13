@@ -23,13 +23,28 @@ price = base_price * clamp((target_stock / current_stock) ^ sensitivity, floor, 
 - No handler accepts within `Config.HumanResponseTimeout` (default 300s), or nobody's on duty at all → falls back to an instant NPC sale.
 - Staff accepting a sale personally earns a commission (`Config.Agencies[id].commission`); an NPC/timeout fallback pays no commission.
 - A per-player, per-item cooldown (`Config.SellCooldown`) prevents spamming the same item.
+- The seller picks **Cash** or **Bank Transfer** right in the sell dialog before confirming — a per-transaction choice, not a `Config` value. `Config.MoneyAccount` is only the fallback if no choice is sent.
 
 ## Buy flow (multi-item cart)
 
 - Reached via a second ox_target option at the same NPC — opens a dedicated cart NUI, not the sell menu.
 - Browse the agency's live catalog, add several items with individual quantities, see a running grand total, then **checkout once** for the whole cart.
 - A Buy order **always** goes to the pending queue — there's no countdown and no automatic/NPC fallback, because fulfillment needs a staff decision (and optionally prints a document) before it can complete. With zero staff on duty the buyer is simply told to wait; the order stays queued indefinitely.
-- Revenue goes into the agency's **job bank account** via `Renewed-Banking` (`Config.Banking`), separate from the personal cash flow Sell uses.
+- Before checkout, the buyer picks **Cash** or **Bank Transfer** for the whole cart, same per-transaction choice as Sell.
+- Revenue goes into the agency's **job bank account** via `Renewed-Banking` (`Config.Banking`), separate from the personal cash flow Buy/Sell use.
+
+## Cash & bank payments
+
+- Both Sell and Buy let the player choose their payment/payout method at the point of the transaction (not a server-wide `Config` setting) — `Bridge.GetPlayerMoney`/`RemoveMoney`/`AddMoney` accept `'cash'` or `'bank'` as the account name on both the ESX and QBX bridges.
+- A **bank**-settled transaction is mirrored into two places so it's never just a silent balance change:
+  1. Renewed-Banking's own statement ledger, via `Banking.LogPersonalTransaction`.
+  2. If `dnd_phone` is installed, straight into the player's **mBanking history** on their phone, via `dnd_phone`'s `exports.dnd_phone:RecordBankHistory` (best-effort — a no-op if `dnd_phone` isn't running or the player has no registered device).
+- Cash transactions have no ledger to mirror into — only the real balance changes, as usual.
+
+## Purchase & sale log grouping
+
+- The Dashboard's transaction log used to show one row per item in a cart — a 5-item Buy order took 5 rows. Every line from the same checkout now shares an `order_id`, and the Dashboard groups them into **one collapsible entry per transaction**: buyer/seller, handler, total, and payment method up front, with a click-to-expand item breakdown underneath.
+- The buyer's/seller's in-game character name is stored on each transaction (`buyer_name`/`seller_name`), not just their raw identifier.
 
 ## Pending review (staff)
 
@@ -47,7 +62,7 @@ Per-agency manager view, access-gated by job + grade (or a `Config.Jobs` governm
 - Prices/stock table with inline target editing and price-hold toggle.
 - Discord webhook URL for the agency's live market embed.
 - **Buy Price Adjustment** — the ± amount staff apply for instansi/gang, editable live.
-- Recent transactions (Sell + Buy, with in-game character names, direction pill, and system-fallback indicator).
+- Recent transactions — one expandable entry per purchase/sale (see [Purchase & sale log grouping](#purchase--sale-log-grouping) above), with in-game character names, direction pill, payment method, and system-fallback indicator.
 - Government-access users can also edit an item's economic properties (base price, floor, ceiling, sensitivity, decay) directly — those overrides persist across config syncs.
 
 ## Market overview (`/demarket`)

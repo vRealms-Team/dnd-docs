@@ -1,0 +1,49 @@
+---
+title: Getting Started
+---
+
+import ResourceLinks from "@/components/resource-links";
+
+<ResourceLinks />
+
+This documentation covers setup, configuration, and internals of the **dnd_jobmanagement** resource.
+
+## What the resource does
+`dnd_jobmanagement` is a job-management suite for FiveM government/service jobs — professional credentials (licenses, identity documents, family cards), a searchable citizen registry, duty tracking with attendance/payroll, and printable document workflows (crime records, medical records, purchase receipts) — all through a Desktop "office PC" NUI and a Portable work tablet, both job/grade-gated per `Config.AppAccess`.
+
+## Highlights
+- **Desktop** — a window-manager NUI at fixed in-world PC props, bundling every app a job's staff has access to: request review, license/document issuance, family cards, template manager, HRD, archive, printer queue, and more.
+- **Portable work tablet** — a carry-item version of the key staff apps (duty, requests, archive, registry, records) so staff aren't tied to a desk.
+- **Standalone citizen tablet** — a separate, linear public-facing flow (pick a document type → fill a form → review → submit) for citizens requesting identity/license documents, no job gating.
+- **Duty tracking** — clock in/out (including a fingerprint-scanner flow), attendance logging, and an HRD dashboard for salary/payroll/hiring — with exports (`ClockIn`, `ClockOut`, `IsOnDuty`, `GetOnDutyStaff`, ...) other resources can call.
+- **Config-driven theming** — `Config.Color` re-skins the Desktop/Portable NUI's accent colors without touching CSS; see [Theming](./Guides/theming).
+- **Template Manager** — a drag/drop builder for custom document field templates (text/date/select/signature, etc.), so new document types don't require code changes.
+- **Printer integration** — a physical print-queue flow shared by identity documents, crime/medical records, and purchase receipts (e.g. from `dnd_economy`'s Buy flow via the `CreatePurchaseDocument` export).
+
+## Core workflows
+
+### Citizen requests a document
+1. Citizen opens the standalone tablet (`tablet:licenses:open`), picks a document/license type, fills the dynamic form, and submits.
+2. The request lands in the job's Requests app (Desktop or Portable) for staff to review/approve/deny.
+3. An approved request queues into the printer system — staff walk to a printer prop and print it.
+
+### Staff duty & HRD
+1. Staff clock in/out via a fingerprint scanner, the duty widget, or the Portable tablet's Staff Duty screen.
+2. Attendance is logged automatically; the HRD app surfaces clock records, salary, and hiring for that job.
+3. Other resources can read/drive duty state through this resource's exports (`IsOnDuty`, `ClockIn`, `ClockOut`, `GetOnDutyStaff`, ...).
+
+### Custom document types
+1. A manager opens Template Manager and builds a field layout (text/date/select/signature/etc.) for a new document type.
+2. The new type becomes available wherever document issuance/requests happen, no code changes needed.
+
+## Recommended first steps
+1. Install dependencies — see [Dependencies](./Installation/dependencies).
+2. Import the database schema — see [Database Setup](./Installation/database-setup).
+3. Build the frontend (`cd web && npm install && npm run build`).
+4. Configure `shared/config/*.lua` to match your server (jobs, app access, world interaction points) — see [Configuration](./Installation/configuration).
+5. Optional: re-skin the Desktop/Portable NUI's accent colors — see [Theming](./Guides/theming).
+
+## Production-ready settings
+- Verify `web/dist` was built (`cd web && npm run build`) — it's git-ignored and not shipped pre-built.
+- Review `Config.AppAccess` per job/grade before going live — every app is opt-in per job.
+- Set `Config.JobAliases` if a job's canonical name (used internally, and by integrations like `dnd_economy`'s purchase-document hook) differs from your framework's raw job name.

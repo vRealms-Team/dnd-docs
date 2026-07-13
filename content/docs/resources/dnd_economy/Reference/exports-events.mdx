@@ -49,3 +49,19 @@ local ok, requestId = exports['dnd_jobmanagement']:CreatePurchaseDocument({
 ```
 
 `ok == true` on success, with `requestId` usable at any `dnd_jobmanagement` printer prop by staff on the agency's job (or `government`). This requires `dnd_jobmanagement` to be running — the call is wrapped in `pcall` on the `dnd_economy` side, so a missing/offline `dnd_jobmanagement` doesn't unwind an already-completed sale, it just skips the document and logs a warning.
+
+## Consuming `dnd_phone`'s bank-history export
+
+On every **bank**-settled Buy or Sell, `dnd_economy` calls this itself so the transaction appears in the player's mBanking → History — you don't need to call it yourself unless you're building your own integration:
+
+```lua
+local ok = exports.dnd_phone:RecordBankHistory(
+    source,        -- the player's server id (used to read their live balance for balance_after)
+    identifier,    -- their framework identifier (citizenid/license)
+    amount,        -- positive integer
+    description,   -- shown in the phone's history list, e.g. "Bought 5x Steel from Ammunation"
+    direction      -- 'in' (renders green/incoming) or 'out' (renders red/outgoing)
+)
+```
+
+Requires `dnd_phone` to be running and the player to have a registered phone device — both cases just no-op (`ok == false`) rather than error. `dnd_economy`'s own call is wrapped in `pcall` plus a `GetResourceState('dnd_phone')` check, so a missing/offline `dnd_phone` never unwinds an already-completed transaction.

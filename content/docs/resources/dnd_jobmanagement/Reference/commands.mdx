@@ -1,0 +1,34 @@
+---
+title: Commands
+---
+
+Desktop and the standalone citizen tablet are reached via `ox_target` interaction points (PC props, printers, photo booth — see `shared/config/world.lua`), not slash commands. The commands below cover duty, the Portable work tablet, and admin tooling.
+
+## Duty
+
+| Command | Purpose |
+|---|---|
+| `/duty [toggle\|on\|off\|status]` | Clock in/out (defaults to `toggle`), or check current status |
+| `/dutymenu` | ox_lib checkbox menu — toggle duty and the duty widget's visibility |
+| `/duty_widget` | Toggle the on-screen duty widget |
+
+## Portable work tablet
+
+| Command | Purpose |
+|---|---|
+| `Config.PortableTablet.Command` (default `worktablet`) | Opens the Portable tablet, if the player's job/grade has access |
+
+## Card holder
+
+| Command | Purpose |
+|---|---|
+| `/holder_documents` | Open the card-holder's document list |
+
+## Admin (requires `Config.Admin.Permissions`, ACE-gated)
+
+| Command | Purpose |
+|---|---|
+| `Config.Admin.Command` (default `jm_admin`) | Opens the admin panel |
+| `/jm_grant_weapon_licenses` | Bulk-grant weapon licenses |
+| `/jm_setname` | Manually set a player's name on record |
+| `/setsalary` | Manually set a job's salary configuration |

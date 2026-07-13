@@ -1,0 +1,42 @@
+---
+title: Database Setup
+---
+
+## Automatic (recommended)
+
+Tables are created automatically (`CREATE TABLE IF NOT EXISTS`) the first time the resource starts — `installation/db.sql`'s core tables plus `escrow/server/migrations.lua`'s feature tables. Nothing to run manually; just start the resource once.
+
+## Manual
+
+If you'd rather import it yourself, run `installation/db.sql`, then let the resource create the rest on first boot (or extract the matching `CREATE TABLE` statements from `escrow/server/migrations.lua`).
+
+### Core tables (`installation/db.sql`)
+
+| Table | Purpose |
+|---|---|
+| `dnd_jm_config` | Per-job settings + document templates (JSON) |
+| `dnd_jm_requests` | Generic identity/document request records — `kind`/`type` + a JSON payload cover every request type |
+| `dnd_jm_holders` | Issued card-holder items linked to a citizen (JSON payload) |
+| `dnd_jm_starterpack_claims` | Tracks one-time starterpack grants per character |
+
+### Feature tables (`escrow/server/migrations.lua`)
+
+| Table | Purpose |
+|---|---|
+| `dnd_jm_attendance_logs` | Clock in/out history |
+| `dnd_jm_officer_salary` | Per-job salary configuration |
+| `dnd_jm_bonus_config` | HRD bonus rules |
+| `dnd_jm_weekly_tracking` | Weekly hours/attendance tracking |
+| `dnd_jm_starterpack_config` | Starterpack vehicle/SKWB grant configuration |
+| `dnd_jm_job_salary_grades` | Per-grade salary table |
+| `dnd_jm_payroll_config` | Payroll run configuration |
+| `dnd_jm_payroll_history` | Past payroll runs |
+| `dnd_jm_recruitment_config` | Hiring/application form configuration |
+| `dnd_jm_job_applications` | Submitted job applications |
+| `dnd_jm_medical_records` | EMS medical record entries |
+| `dnd_jm_crime_records` | Police criminal record entries |
+| `dnd_jm_audit_logs` | Admin-panel audit trail |
+
+## Config vs database
+
+Most of the day-to-day content (job app access, world interaction points, document type definitions) lives in `shared/config/*.lua` and is read fresh on every boot — the database only holds runtime/player data: requests, issued documents, attendance, salary, records, and admin audit history.

@@ -1,0 +1,26 @@
+---
+title: Dependencies
+---
+
+## Required
+
+| Resource | Why |
+|---|---|
+| [`oxmysql`](https://github.com/overextended/oxmysql) | All database access (`MySQL.*` calls) |
+| [`ox_lib`](https://github.com/overextended/ox_lib) | Callbacks, NUI dialogs, notifications, context menus |
+| [`ox_inventory`](https://github.com/overextended/ox_inventory) | Card-holder items, starterpack grants, inventory-backed item exports |
+| [`ox_target`](https://github.com/overextended/ox_target) | World interaction points (PCs, printers, photo booth, fingerprint scanners) |
+
+## Optional (feature-gated)
+
+| Resource | Enables |
+|---|---|
+| `dnd_economy` | Not a dependency of this resource — it's the other direction: if `dnd_economy` is installed, it calls this resource's `CreatePurchaseDocument` export. |
+
+## Framework
+
+Auto-detected via `bridge/init.lua` (checks for ESX or Qbox), matching the resource description ("ESX / Qbox").
+
+## Build tooling (dev-time only, not a runtime dependency)
+
+- Node.js + npm — only needed to run `cd web && npm run build` before shipping; the built `web/dist` output is what actually ships.

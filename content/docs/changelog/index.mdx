@@ -6,6 +6,14 @@ This section can be used to track release history across all documented resource
 
 ## dnd_economy
 
+### v1.1.0 — Pembayaran Cash/Bank & Log Transaksi Ringkas
+
+**Fitur baru**
+- Pilihan pembayaran Cash atau Transfer Bank untuk Jual maupun Beli, dipilih langsung di NUI saat transaksi — bukan pengaturan `Config` global.
+- Transaksi via bank sekarang tercatat di riwayat, bukan cuma mengubah saldo diam-diam: masuk ke statement Renewed-Banking sendiri, dan (kalau `dnd_phone` terpasang) ke riwayat mBanking di HP pemain lewat export baru `dnd_phone` (`exports.dnd_phone:RecordBankHistory`).
+- Log pembelian/penjualan di Dashboard dikelompokkan jadi satu baris per checkout (bukan satu baris per item), dengan klik-untuk-expand ke rincian item.
+- Nama pembeli/penjual (bukan cuma identifier) sekarang tersimpan dan tampil di log transaksi.
+
 ### v1.0.0 — Marketplace Beli dari Instansi (B2B)
 
 **Fitur baru**
@@ -26,3 +34,15 @@ This section can be used to track release history across all documented resource
 - Countdown di NUI Pending tidak lagi membuat kartu pesanan beli hilang otomatis dalam 1 detik.
 - Dokumen pembelian tidak lagi gagal muncul di antrian printer `dnd_jobmanagement` akibat perbedaan nama job mentah vs kanonik.
 - Harga & total di dokumen pembelian sekarang menampilkan harga final (setelah penyesuaian instansi/gang), bukan harga sebelum penyesuaian.
+
+## dnd_jobmanagement
+
+### v2.2.0 — Tema Warna, Ikon MDI & Perbaikan Work Tablet
+
+**Fitur baru**
+- Tema warna NUI bisa dikustomisasi lewat `Config.Color` untuk Desktop dan Portable — lihat [Theming](/docs/resources/dnd_jobmanagement/Guides/theming). Sebelumnya resource ini tidak punya sistem theming sama sekali.
+- Semua ikon emoji di Desktop & Portable diganti ikon MDI (Material Design Icons).
+- Jendela viewer (kartu identitas & dokumen) sekarang responsif di semua ukuran monitor, bukan cuma di layar kecil.
+
+**Perbaikan bug**
+- Tombol toggle on/off duty di work tablet diperbaiki — sebelumnya tombol bisa tidak sinkron/macet karena client menebak status duty secara optimis sebelum server benar-benar mengonfirmasi. Sekarang pakai satu callback server yang langsung eksekusi dan mengembalikan hasil sebenarnya.

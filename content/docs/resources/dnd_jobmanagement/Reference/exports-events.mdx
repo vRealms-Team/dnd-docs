@@ -1,0 +1,78 @@
+---
+title: Exports & Events
+---
+
+## HRD / duty exports (`integrations/hrd_exports.lua`)
+
+Server-side, for other resources (e.g. `dnd_phone`'s Job app) to read HRD/duty data and drive the recruitment flow without depending on this resource's own tablet NUI. Every export returns `ok:boolean, result:table|errorMessage:string`.
+
+```lua
+local ok, info = exports['dnd_jobmanagement']:GetOfficerInfo(source)
+-- info = { identifier, job, jobLabel, grade, gradeLabel, onDuty, dutyStartTime,
+--          dutyDurationSeconds, salary = { base_salary_week, grade } | nil }
+-- Combines job/grade, duty status, and configured salary for one player —
+-- ok == false means the player has no job at that job app's job.
+
+local ok, onDuty = exports['dnd_jobmanagement']:IsOnDuty(source)
+
+local ok, staff = exports['dnd_jobmanagement']:GetOnDutyStaff('police')
+-- staff = { list = { { identifier, name, ... }, ... }, count }
+-- jobName should be a canonical job name (police/ambulance/government/...).
+
+-- Same code path as the fingerprint scanner / work tablet toggle — framework
+-- duty sync, attendance log, webhook, and the dutyChanged broadcast below
+-- all still fire.
+local ok, result = exports['dnd_jobmanagement']:ClockIn(source)
+local ok, result = exports['dnd_jobmanagement']:ClockOut(source)
+
+local ok, salary = exports['dnd_jobmanagement']:GetMySalary(source)
+-- salary = { base_salary_week, grade } — configured weekly base, not a payroll calculation.
+
+local ok, entry = exports['dnd_jobmanagement']:GetMyPayrollHistory(source, '2026-07-01', '2026-07-13')
+-- Read-only — does NOT insert a payroll history row. entry = { officer_name, grade,
+-- grade_label, total_hours, base_salary, base_pay, overtime_hours, overtime_bonus,
+-- attendance_bonus, performance_bonus, total_pay } | ok == false if no attendance in range.
+
+local ok, data = exports['dnd_jobmanagement']:IsHiringOpen('police')
+-- data = { isOpen, fields } — fields is that job's own custom application form.
+-- No job/grade requirement — any player can check this.
+
+local ok, result = exports['dnd_jobmanagement']:SubmitApplication(source, 'police', { [fieldKey] = value, ... })
+-- answers keyed by field.key, matching the form from IsHiringOpen. Rejects if
+-- hiring is closed or the player already has a pending application.
+```
+
+## Events `dnd_jobmanagement` fires
+
+```lua
+AddEventHandler('dnd_jobmanagement:staff:dutyChanged', function(data)
+    -- data = { identifier, name, job, onDuty, durationSeconds?, timestamp }
+    -- Fires on every clock in/out, regardless of trigger (fingerprint scanner,
+    -- work tablet, or the ClockIn/ClockOut exports above). Use this for
+    -- push-based UI (e.g. a "staff on duty" badge) instead of polling GetOnDutyStaff.
+end)
+
+AddEventHandler('dnd_jobmanagement:job:hiringStatusChanged', function(data)
+    -- data = { job, isOpen }
+    -- Fires when a job's manager opens/closes hiring from the HRD app's
+    -- Recruitment tab. Use to show/hide an "Apply Job" tab live instead of
+    -- polling IsHiringOpen.
+end)
+```
+
+## Purchase-document export (`integrations/economy_exports.lua`)
+
+Consumed by `dnd_economy`'s Buy flow — see [that resource's docs](/docs/resources/dnd_economy/Reference/exports-events#consuming-dnd_jobmanagements-purchase-document-export) for the full call shape:
+
+```lua
+local ok, requestId = exports['dnd_jobmanagement']:CreatePurchaseDocument({
+    issuerSource, agencyLabel, agencyJobName, buyerIdentifier, buyerName,
+    buyerJobLabel, priceMode, items, total, totalFormatted,
+})
+```
+
+Queues a printable receipt at any printer prop, for staff on `agencyJobName` (or `government`).
+
+## Item exports (client-side)
+
+`escrow/client/item_exports.lua` registers a per-item export for card-holder inventory items (e.g. `useCardHolder(data, slot)`), wired up wherever `Config.use_holder = true` items are used from the inventory.

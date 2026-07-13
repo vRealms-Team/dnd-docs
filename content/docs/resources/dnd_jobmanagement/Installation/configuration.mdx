@@ -1,0 +1,130 @@
+---
+title: Configuration
+---
+
+Config is split across `shared/config/*.lua`, aggregated by `shared/config.lua`. Load order matters — `core.lua` (which defines `Config.AppAccess`) loads before `world.lua`, which references it.
+
+## Core (`shared/config/core.lua`)
+
+```lua
+Config.Locale = 'en'          -- 'en' | 'id'
+Config.Debug = true
+Config.Framework = 'auto'     -- 'auto' | 'esx' | 'qbox'
+Config.use_holder = true      -- card-holder item vs one item per document type
+```
+
+### Color (NUI theming)
+
+```lua
+Config.Color = {
+    mainColor      = '#34b864', -- primary accent: active states, highlights, online status
+    mainColorLight = '#3ddc84', -- lighter tint: hover glows, gradient light stops
+    buttonColor    = '#3b82f6', -- secondary accent: info/button highlights
+    successColor   = '#34b864', -- accept actions, on-duty status
+    warningColor   = '#fbbf24', -- pending/attention states
+    dangerColor    = '#ef4444', -- reject/error states
+}
+```
+
+Re-skins the Desktop/Portable NUI's accent colors without editing CSS — see [Theming](../Guides/theming) for a live preview and a generator that outputs this block ready to paste.
+
+### Currency format
+
+```lua
+Config.CurrencyFormat = {
+    symbol = '',                  -- '' = none, '$', 'Rp ', etc.
+    position = 'after',           -- 'before' | 'after'
+    useThousandsSeparator = true,
+    thousandsSeparator = ',',
+    decimalPlaces = 0,
+}
+```
+
+### Job aliases
+
+```lua
+Config.JobAliases = {
+    government = 'pemerintah',    -- canonical = your framework's raw job name
+    restaurant = 'restoran',
+}
+```
+
+Needed if a job's canonical name (used internally, and by integrations like `dnd_economy`'s purchase-document hook) differs from your framework's raw job name.
+
+### App access
+
+```lua
+Config.AppAccess = {
+    government = {
+        ['request'] = { minGrade = 0 },
+        ['licenses'] = { minGrade = 2 },
+        ['documents'] = { minGrade = 2 },
+        -- ... one entry per app, per job — see Features Overview for the full app list
+    },
+    police = { ... },
+    ambulance = { ... },
+}
+```
+
+Every app is opt-in per job, with a minimum grade. A job/app combination not listed here simply isn't visible to that job.
+
+### Grade labels & HRD manager grade
+
+```lua
+Config.JobGradeLabels = { police = { [0] = 'Recruit', ... }, ... }
+Config.HRD = {
+    ManagerGrade = { police = 2, government = 2, ... },
+    DefaultManagerGrade = 2,
+}
+```
+
+### Access control
+
+```lua
+Config.AccessControl = {
+    LicenseVisibility = {
+        POLICE_BADGE = { visible_to = { 'police' }, min_grade = 0 },
+        -- Types with visible_to = {} are hidden from internal issuance — request via tablet instead.
+    },
+    ArchiveAccess = {
+        police = { min_grade = 2, can_revoke = true, revoke_min_grade = 3, can_delete = true, delete_min_grade = 3 },
+        -- ...
+    },
+    default_archive_access = { min_grade = 0, can_revoke = false, can_delete = false },
+}
+```
+
+## Requests (`shared/config/requests.lua`)
+
+Starterpack grant rules, request-review policy, name-change app rules, and internal license issuance (callsigns/grade maps).
+
+## Documents (`shared/config/documents.lua`)
+
+`Config.IDTypes` — identity/license type definitions (required fields, expiry), plus Template Manager permissions and document template defaults.
+
+## World (`shared/config/world.lua`)
+
+Physical-world interaction points: photo booth, pass-photo capture, emotes, viewer windows, Desktop/Tablet/Portable-tablet spawn points, printer props, tablet-allowed document types, duty widget, and fingerprint clock-in scanners.
+
+## Integrations (`shared/config/integrations.lua`)
+
+```lua
+Config.Webhooks = {
+    Enabled = false,
+    Default = '',              -- fallback webhook if a job-specific one isn't set
+    Change_name = '',          -- name-change requests (government only)
+    ByJob = { police = '', ambulance = '', government = '' },
+    IdentityByType = { IDENTITY_CARD = '', DRIVE_LICENSE = '', -- ... },
+}
+
+Config.Admin = {
+    Command = 'jm_admin',
+    Permissions = {
+        full = 'jobmanagement.admin', view = 'jobmanagement.admin.view',
+        editDuty = 'jobmanagement.admin.edit.duty', editSalary = 'jobmanagement.admin.edit.salary',
+        export = 'jobmanagement.admin.export', settings = 'jobmanagement.admin.settings',
+    },
+    AuditWebhook = '',          -- '' disables mirroring admin actions to Discord
+    AuditRetentionDays = 90,
+}
+```

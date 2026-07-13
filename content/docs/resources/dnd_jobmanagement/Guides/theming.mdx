@@ -1,0 +1,40 @@
+---
+title: Theming (Config.Color)
+---
+
+The Desktop and Portable NUI read their accent colors from `Config.Color` on load and apply them as CSS variable overrides (`web/src/lib/theme.ts`) — no CSS editing required. Same shape as `dnd_economy`'s own `Config.Color`, so the two resources stay visually consistent if you theme them the same way.
+
+## Default palette
+
+```lua
+Config.Color = {
+    mainColor      = '#34b864', -- primary accent: active states, highlights, online status
+    mainColorLight = '#3ddc84', -- lighter tint: hover glows, gradient light stops
+    buttonColor    = '#3b82f6', -- secondary accent: info/button highlights
+    successColor   = '#34b864', -- accept actions, on-duty status
+    warningColor   = '#fbbf24', -- pending/attention states
+    dangerColor    = '#ef4444', -- reject/error states
+}
+```
+
+## What each key controls
+
+| Key | CSS variable | Used for |
+|---|---|---|
+| `mainColor` | `--c-primary` | Active states, highlights, online-status dot |
+| `mainColorLight` | `--c-primary-light` | Hover glows, gradient light stops |
+| `buttonColor` | `--c-secondary` | Info/secondary button highlights |
+| `successColor` | `--c-success` | Accept actions, on-duty status |
+| `warningColor` | `--c-warning` | Pending/attention states |
+| `dangerColor` | `--c-danger` | Reject/error states |
+
+Structural surfaces — window chrome, backgrounds, borders — aren't themeable through this config; only the brand/status accent tokens above are.
+
+## Applying it
+
+1. Edit the `Config.Color` block in `shared/config/core.lua`.
+2. Restart the resource — the NUI fetches this fresh from Lua on every Desktop/Portable open, no rebuild needed.
+
+## Coverage
+
+Icons across every Desktop app and the Portable tablet use MDI (`@mdi/js`) SVGs instead of emoji, sharing the same accent tokens above — status dots, toggle icons, and action buttons all follow whatever palette you configure here.

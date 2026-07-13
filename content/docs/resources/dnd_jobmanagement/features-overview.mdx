@@ -1,0 +1,54 @@
+---
+title: Features Overview
+---
+
+## Desktop apps
+
+Reached at fixed in-world PC props, gated per job + minimum grade by `Config.AppAccess`. Each app is opt-in — a job only sees the apps its config lists.
+
+| App | Purpose |
+|---|---|
+| **Requests** | Review/approve/deny incoming identity & document requests submitted by citizens. |
+| **Licenses** | Staff-side issuance of licenses/IDs directly to a selected player. |
+| **Documents** | Manage/issue general (non-license) documents via custom templates. |
+| **Family Card** | Create/edit/print family card (Kartu Keluarga) records and household members. |
+| **Printer** | Physical print queue — pulls pending identity/document print jobs and renders them. |
+| **Archive** | Searchable archive of past issued identity/document records with print history. |
+| **Template Manager** | Drag/drop builder for custom document field templates (text, date, select, signature, ...). |
+| **Change Name** | Process legal name-change requests for a selected player. |
+| **HRD** | HR dashboard — attendance/clock records, salary, hiring & applications for a job. |
+| **Starterpack Config** | Configure the new-character starterpack vehicle & starter-weapon-box grant. |
+| **Card Holder Reissue** | Reissue/replace a lost card-holder item, check vehicle/holder info for a player. |
+| **Warga Registry** | Citizen registry — households, vehicle ownership, property lookup. |
+| **Crime Records** | Police criminal-record entries with rich-text notes and printing. |
+| **Medical Records** | Medical (EMS) record entries with rich-text notes and printing. |
+
+## Portable work tablet
+
+A staff carry-item version of select Desktop apps, opened in-world rather than at a fixed PC. Bundles: Staff Duty (clock in/out), Requests, HRD, Archive, Warga Registry, Medical Records, Crime Records, and Documents — all job-gated the same way Desktop is.
+
+## Standalone citizen tablet
+
+A separate, single-purpose flow for citizens (not staff) requesting a document: pick a type → fill a dynamic form → review → submit. No window chrome, no job-scoped app access — opened via the `tablet:licenses:open` NUI event.
+
+## Duty tracking & HRD
+
+- Clock in/out via a fingerprint scanner, the duty widget, or the Portable tablet's Staff Duty screen.
+- Attendance is logged automatically; the HRD app surfaces clock records, salary, and hiring/applications for that job.
+- Exposed to other resources via exports — `IsOnDuty`, `ClockIn`, `ClockOut`, `GetOnDutyStaff`, `GetOfficerInfo`, `GetMySalary`, `GetMyPayrollHistory`, `IsHiringOpen`, `SubmitApplication`. See [Exports & Events](./Reference/exports-events).
+
+## Printer & document pipeline
+
+A shared physical print-queue flow used by identity documents, licenses, crime/medical records, and external integrations (e.g. `dnd_economy`'s Buy flow queues a purchase receipt via the `CreatePurchaseDocument` export). Staff walk to a printer prop and print from the queue — no manual "create document" step.
+
+## Template Manager
+
+New document types (beyond the built-in identity/license set) are built visually: field-by-field (text, date, select, signature, etc.), no code changes required. Once saved, the new type becomes available wherever document issuance/requests happen.
+
+## Theming
+
+The Desktop/Portable NUI's accent colors are driven by `Config.Color` — no CSS editing required. See [Theming](./Guides/theming) for a live preview and a config snippet generator.
+
+## Responsive layout
+
+Desktop windows, the Portable home grid, and document/identity preview windows (`ViewerShell`) all scale with the viewport (`min(vw, px)` clamps) rather than using fixed pixel positions, so they stay usable across different monitor resolutions and aspect ratios.

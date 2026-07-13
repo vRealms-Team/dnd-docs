@@ -22,7 +22,7 @@ If you'd rather import it yourself: run `sql/install.sql` once against your data
 | `dnd_eco_items` | Master commodity list (base price, floor/ceiling/sensitivity/decay) |
 | `dnd_eco_agencies` | Agency config mirror (label, job, collection, commission, Buy price adjustment, webhook) |
 | `dnd_eco_agency_stock` | Per-agency-item runtime state (current price, target stock, price holds) |
-| `dnd_eco_transactions` | Sell + Buy history (`direction` column), buyer/seller/handler identifiers and names |
+| `dnd_eco_transactions` | Sell + Buy history (`direction` column), buyer/seller/handler identifiers and names, `order_id` (groups a cart's line items into one Dashboard entry) and `payment_method` (`cash`/`bank`) |
 | `dnd_eco_player_cooldowns` | Per-player, per-item Sell cooldown |
 | `dnd_eco_price_snapshots` | Price history for trend sparklines |
 | `dnd_eco_schema_versions` | Migration tracking |

@@ -18,7 +18,8 @@ title: Installation
 
 ## Optional integrations
 
-Both are optional — the resource works without either, just with the related feature disabled.
+All optional — the resource works without any of them, just with the related feature disabled.
 
-- **`Renewed-Banking`** — required for the Buy flow (`Config.Banking.Enabled = true`). Without it, buying stays effectively disabled (checked at the top of the purchase transaction) rather than silently discarding revenue.
+- **`Renewed-Banking`** — required for the Buy flow (`Config.Banking.Enabled = true`). Without it, buying stays effectively disabled (checked at the top of the purchase transaction) rather than silently discarding revenue. It's also what a **bank**-paid Sell/Buy mirrors its statement entry into (personal balance moves happen through the framework bridge either way — cash or bank).
 - **`dnd_jobmanagement`** — required for `Config.Printer = 'dnd_jobmanagement'` (auto-queues a printable document when staff accept a Buy order). Set `Config.Printer = 'none'` if you don't run it.
+- **`dnd_phone`** — if running, a **bank**-paid Sell/Buy also gets logged into the player's own mBanking → History via `dnd_phone`'s `exports.dnd_phone:RecordBankHistory`, so it shows up on their phone, not just their balance. Silently skipped if `dnd_phone` isn't installed.

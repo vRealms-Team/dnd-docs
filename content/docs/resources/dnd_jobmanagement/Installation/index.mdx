@@ -1,0 +1,22 @@
+---
+title: Installation
+---
+
+1. Drop `dnd_jobmanagement` into your resources folder.
+2. Install the required dependencies — see [Dependencies](./dependencies).
+3. Import the database schema — see [Database Setup](./database-setup).
+4. Build the NUI:
+   ```bash
+   cd web
+   npm install
+   npm run build
+   ```
+   `web/dist` is git-ignored and not shipped pre-built — the resource won't have a working Desktop/Portable/Tablet UI without this step.
+5. Place your in-world PC/tablet props and point `shared/config/world.lua`'s Desktop/Portable/photo-booth/printer/fingerprint-scanner spawn points at them.
+6. Configure `shared/config/*.lua` (job app access, item/document types, world interaction points) — see [Configuration](./configuration).
+7. Add `ensure dnd_jobmanagement` to your `server.cfg`, after its dependencies.
+
+## Optional integrations
+
+- **`dnd_economy`** — if installed, its Buy flow calls this resource's `CreatePurchaseDocument` export to queue a printable purchase receipt. Nothing to configure here; `dnd_economy`'s own `Config.Printer` controls whether it's used.
+- Discord webhooks (`Config.Webhooks` in `shared/config/integrations.lua`) — optional, per-job and/or a default, for logging events out to Discord.
