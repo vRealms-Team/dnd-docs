@@ -1,0 +1,32 @@
+---
+title: dnd_economy
+---
+
+### v1.1.0 — Cash/Bank Payments & Simplified Transaction Log
+
+**New features**
+- Choose to pay/get paid via Cash or Bank Transfer for both Sell and Buy, picked directly in the NUI at the point of the transaction — not a global `Config` setting.
+- A bank-settled transaction is now actually recorded in history, not just a silent balance change: it lands in Renewed-Banking's own statement, and (if `dnd_phone` is installed) in the player's mBanking history via a new `dnd_phone` export (`exports.dnd_phone:RecordBankHistory`).
+- The Dashboard's purchase/sale log is now grouped into one row per checkout (instead of one row per item), with click-to-expand item detail.
+- The buyer's/seller's character name (not just their identifier) is now stored and shown in the transaction log.
+
+### v1.0.0 — Buy-from-Agency Marketplace (B2B)
+
+**New features**
+- The Buy flow was rebuilt as a multi-item cart — pick several items with individual quantities, see a running total, and checkout once for the whole cart.
+- Sell and Buy are now always staff-first: both go to the pending queue first when staff are on duty, no longer gated by a per-agency `collection` setting.
+  - **Sell** still has a countdown and falls back to an NPC sale if nobody accepts.
+  - **Buy** has no countdown or automatic fallback — it waits indefinitely for a staff decision, since fulfilling it can also involve printing a document.
+- The Pending NUI now has two tabs: *Sell Requests* and *Buy Orders*.
+- A configurable instansi (discount) / gang (markup) price adjustment applies when staff accept a Buy order — the amount is per-agency and editable live from the Dashboard.
+- Document-printing integration with `dnd_jobmanagement` — a purchase receipt is automatically queued at the printer once staff accept an order, including the buyer's character name, purchase type, an itemized table, and a configurable currency format.
+- Player names are now consistently the in-game character name (not the FiveM account name) across the Dashboard, pending list, webhook logs, and purchase documents.
+- NUI accent colors are now themeable via `Config.Color` — see [Theming](/docs/resources/dnd_economy/Guides/theming) for a live preview and config generator.
+- All emoji icons in the NUI were replaced with MDI (Material Design Icons).
+
+**Bug fixes**
+- Sell no longer always fell back to an NPC sale even when staff were on duty.
+- The Dashboard's "Recent Transactions" now shows the handler's correct character name instead of a raw identifier.
+- The Pending NUI's countdown no longer made a Buy order card disappear after 1 second.
+- Purchase documents no longer silently failed to appear in `dnd_jobmanagement`'s printer queue due to a raw-vs-canonical job name mismatch.
+- Purchase document pricing/totals now show the final price (after the instansi/gang adjustment), not the pre-adjustment price.

@@ -1,0 +1,13 @@
+---
+title: dnd_jobmanagement
+---
+
+### v2.2.0 — Color Theming, MDI Icons & Work Tablet Fix
+
+**New features**
+- NUI accent colors are now themeable via `Config.Color` for Desktop and Portable — see [Theming](/docs/resources/dnd_jobmanagement/Guides/theming). This resource had no theming system at all before.
+- All emoji icons across Desktop & Portable were replaced with MDI (Material Design Icons).
+- Viewer windows (identity cards & documents) are now responsive at every monitor size, not just small screens.
+
+**Bug fixes**
+- Fixed the work tablet's on/off duty toggle button — it could previously get out of sync or stuck, because the client optimistically guessed the new duty state before the server had actually confirmed it. It now calls a single server callback that executes the change and returns the real result.

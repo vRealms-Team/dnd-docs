@@ -2,47 +2,9 @@
 title: Changelog
 ---
 
-This section can be used to track release history across all documented resources.
+Release history for each documented resource, tracked on its own page:
 
-## dnd_economy
+- [dnd_economy](./dnd_economy)
+- [dnd_jobmanagement](./dnd_jobmanagement)
 
-### v1.1.0 — Pembayaran Cash/Bank & Log Transaksi Ringkas
-
-**Fitur baru**
-- Pilihan pembayaran Cash atau Transfer Bank untuk Jual maupun Beli, dipilih langsung di NUI saat transaksi — bukan pengaturan `Config` global.
-- Transaksi via bank sekarang tercatat di riwayat, bukan cuma mengubah saldo diam-diam: masuk ke statement Renewed-Banking sendiri, dan (kalau `dnd_phone` terpasang) ke riwayat mBanking di HP pemain lewat export baru `dnd_phone` (`exports.dnd_phone:RecordBankHistory`).
-- Log pembelian/penjualan di Dashboard dikelompokkan jadi satu baris per checkout (bukan satu baris per item), dengan klik-untuk-expand ke rincian item.
-- Nama pembeli/penjual (bukan cuma identifier) sekarang tersimpan dan tampil di log transaksi.
-
-### v1.0.0 — Marketplace Beli dari Instansi (B2B)
-
-**Fitur baru**
-- Alur Beli (Buy) direvisi total menjadi keranjang multi-item — pilih beberapa item sekaligus dengan jumlah masing-masing, lihat total belanja langsung, checkout satu kali untuk seluruh keranjang.
-- Jual dan Beli sekarang selalu staff-first: keduanya masuk ke antrian pending dulu kalau ada staff on-duty, tidak lagi tergantung pengaturan `collection` per instansi.
-  - **Jual** tetap ada hitung mundur dan jatuh ke NPC kalau tidak ada yang menerima.
-  - **Beli** tidak punya hitung mundur maupun fallback otomatis — menunggu tanpa batas waktu sampai staff menerima, karena butuh keputusan staff (dan bisa mencetak dokumen) dulu.
-- NUI Pending sekarang punya 2 tab: *Permintaan Jual* dan *Pesanan Beli*.
-- Penyesuaian harga instansi (diskon) / gang (markup) saat staff menerima pesanan beli — jumlahnya per-instansi dan bisa diedit langsung dari Dashboard, tanpa restart.
-- Integrasi cetak dokumen ke `dnd_jobmanagement` — nota pembelian otomatis masuk antrian printer begitu staff menerima pesanan, lengkap dengan nama karakter pembeli, tipe pembelian, rincian item dalam bentuk tabel, dan format mata uang yang bisa dikustomisasi.
-- Nama pemain sekarang konsisten pakai nama karakter in-game (bukan nama akun FiveM) di Dashboard, daftar pending, log webhook, dan dokumen pembelian.
-- Tema warna NUI bisa dikustomisasi lewat `Config.Color` — lihat [Theming](/docs/resources/dnd_economy/Guides/theming) untuk live preview + generator konfigurasi.
-- Semua ikon emoji di NUI diganti ikon MDI (Material Design Icons).
-
-**Perbaikan bug**
-- Sell tidak lagi selalu jatuh ke NPC meski ada staff on-duty.
-- Dashboard "Recent Transactions" menampilkan nama karakter handler yang benar, bukan identifier mentah.
-- Countdown di NUI Pending tidak lagi membuat kartu pesanan beli hilang otomatis dalam 1 detik.
-- Dokumen pembelian tidak lagi gagal muncul di antrian printer `dnd_jobmanagement` akibat perbedaan nama job mentah vs kanonik.
-- Harga & total di dokumen pembelian sekarang menampilkan harga final (setelah penyesuaian instansi/gang), bukan harga sebelum penyesuaian.
-
-## dnd_jobmanagement
-
-### v2.2.0 — Tema Warna, Ikon MDI & Perbaikan Work Tablet
-
-**Fitur baru**
-- Tema warna NUI bisa dikustomisasi lewat `Config.Color` untuk Desktop dan Portable — lihat [Theming](/docs/resources/dnd_jobmanagement/Guides/theming). Sebelumnya resource ini tidak punya sistem theming sama sekali.
-- Semua ikon emoji di Desktop & Portable diganti ikon MDI (Material Design Icons).
-- Jendela viewer (kartu identitas & dokumen) sekarang responsif di semua ukuran monitor, bukan cuma di layar kecil.
-
-**Perbaikan bug**
-- Tombol toggle on/off duty di work tablet diperbaiki — sebelumnya tombol bisa tidak sinkron/macet karena client menebak status duty secara optimis sebelum server benar-benar mengonfirmasi. Sekarang pakai satu callback server yang langsung eksekusi dan mengembalikan hasil sebenarnya.
+> Changelog entries are currently maintained in English only.
