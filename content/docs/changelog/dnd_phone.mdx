@@ -1,0 +1,14 @@
+---
+title: dnd_phone
+---
+
+### v1.8.0 — Dark Chat PIN Gate & Grouped Identity Picker
+
+**New features**
+- Dark Chat's identity picker groups identities by org type (Elite/Seller/Buyer/Courier) instead of a flat list — clearer when a player holds several flashdisks of the same kind.
+- Opening a flashdisk-membership identity (Elite/Seller/Buyer) in Dark Chat now requires entering that org's PIN, verified fresh every time via `dnd_blackmarketplace`'s bridge. Live gang-match identities and Courier are unaffected (neither has a PIN by design).
+
+**Bug fixes**
+- Fixed ESC falling through to FiveM's own pause menu while the phone was open — it now closes the phone instead, matching the pattern already used elsewhere in the resource.
+
+> See `CHANGELOG.md` in the repo for the full Phase 1/2 history — this entry covers only the Dark Chat work shipped in 1.8.0.

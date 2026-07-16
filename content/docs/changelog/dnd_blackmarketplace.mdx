@@ -1,0 +1,22 @@
+---
+title: dnd_blackmarketplace
+---
+
+### v1.1.0 — Courier Identity Overhaul, Elite Item Picker, Chat Anonymization
+
+**New features**
+- Courier flashdisk + alias onboarding: Elite generates a PIN-protected courier flashdisk (not tied to any org); first tablet login prompts the courier to set a persistent alias, replacing the old unauthenticated "hold the bare tablet" bypass.
+- Tablet flashdisk picker: holding multiple Elite/Courier flashdisks now shows a picker to choose which one to open, instead of silently opening whichever was found first.
+- Buyer↔courier dark chat, mirroring the existing seller↔courier gating (open only while the delivery is in progress, closes automatically on completion).
+- Live gang/job grade shown in Elite's per-org Members view.
+- Searchable ox_inventory item/weapon picker for the Item ID field and crafting recipe ingredients, replacing free-text entry. Item ID and Label are merged into one field.
+- Item catalog entries get a reversible Activate/Deactivate toggle instead of a Delete button; deactivated items stay visible (Inactive badge) instead of disappearing.
+- Couriers can no longer see the real seller/buyer (or Elite-operated shop) org name/label anywhere — delivery list, chat thread names, message history, and push notifications all show generic "Seller"/"Buyer", enforced server-side.
+- Chat bubbles now show `[Org Name] - [member alias or real name]`, resolved server-side, in every conversation (not just Elite's monitoring view).
+
+**Bug fixes**
+- Fixed a raw SQL duplicate-key error when creating an item whose ID only differed by case from an existing one.
+- Fixed the courier tablet playing the wrong (terminal) animation on login.
+- Fixed courier flashdisk PIN validation always failing server-side.
+- Fixed the courier tablet rendering as a monitor frame with the desktop floating chat widget showing alongside its own Chat tab.
+- Fixed the crafting station showing raw ox_inventory spawn codes instead of item labels in Required Materials.
