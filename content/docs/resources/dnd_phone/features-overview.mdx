@@ -7,21 +7,22 @@ title: Features Overview
 ## Core / System
 - **Setup Wizard** — device creation, model (iOS/Android) pick, language, passcode, appearance, performance.
 - **Lock Screen** — OS-differentiated (iOS large thin clock / Android bold centered clock + uppercase date), clock position/style options, notification history stack (up to 4).
-- **Home Screen** — real app icon artwork, press-and-hold jiggle reorder mode (like iOS/Android), unread badge dots, app grid + dock.
+- **Home Screen** — real app icon artwork, press-and-hold jiggle reorder mode (like iOS/Android), unread badge dots, paginated app grid + dock.
 - **Control Center** — pull-down quick settings (Airplane/Dark mode, brightness/volume, notification shade with history + "Clear all"), iOS Camera quick-launch, OS-differentiated styling (frosted glass pill tiles vs flat Material tiles).
-- **Settings** — native-OS-styled grouped cards: dark mode, airplane mode, wallpaper (presets + custom URL, separate lock-screen wallpaper, blur/pan/zoom), ringtone + notification sounds (separate packs, with preview), volume, brightness, accent color theme, language, account credentials, owner name + copy-number.
+- **Settings** — native-OS-styled grouped cards: dark mode, airplane mode, wallpaper (presets + custom URL, separate lock-screen wallpaper, blur/pan/zoom), ringtone + notification sounds (separate packs, with preview), volume, brightness, accent color theme, language, account credentials, owner name + copy-number, **Avatar Builder** (DiceBear-based avatar creator — pick hair/eyes/mouth/clothing/etc. categories, live preview, flattened to a PNG and uploaded the same way a manually-taken profile photo is).
 - **Store** — install/uninstall (show/hide) other apps from the home screen/dock; sidebar category tabs (Finance/Business/Property/Social Media/Transportation).
 
 ## Admin tools
 - **Admin Dashboard** — staff-only standalone tool (`/dnd_phone_admin`, ACE-gated), entirely separate from the phone itself. Searchable list of every registered device + active number, a "Nearby" filter for whoever's online around the admin right now (Steam Hex/License/License2/Discord ID shown live for online owners), and an inline number editor. See [Commands](./Reference/commands) for setup.
 
 ## Communication
-- **Phone** (dialer) — keypad, call via `pma-voice`, incoming/outgoing/active call overlay, call logs, "Hide My Number" toggle, mute, voice activity indicator, Dynamic Island live call pill (iOS).
-- **Messages** — per-device threads, text/image/location share, group chats (create/rename/add member/change photo), delete message/conversation, unread counts, read receipts, online delivery, attachment menu (location/contact/camera/gallery).
+- **Phone** (dialer) — keypad, call via `pma-voice`, incoming/outgoing/active call overlay, call logs, "Hide My Number" toggle, mute, voice activity indicator, Dynamic Island live call pill (iOS), **Group Call** (shared multi-party voice channel, reuses the same call session machinery, join/leave from Group Chat).
+- **Messages** — per-device threads, text/image/location share, group chats (create/rename/add member/change photo), delete message/conversation, unread counts, read receipts, online delivery, attachment menu (location/contact/camera/gallery), typing indicator (`[nama kontak] is typing...`), **Angpao** (red-envelope group money-split — sender sets a total + packet count, first-N claimers each get an equal share, race-safe via an atomic guarded claim query).
 - **Contacts** — CRUD, favorite, block, search, own-profile card, share-to-nearby.
 - **Mail** — send/receive with optional money attachment, claim, star, trash/restore, permanent delete.
-- **Dark Chat** — bridged to `dnd_blackmarketplace`'s `darkchat_*` exports; org-scoped messaging threads.
-- **Birdie** — Twitter/X-style social app: posts, replies (with the full formatting toolbar), likes, reposts, follows, profile editing, photo attach (Gallery or fresh Camera capture), per-account notification scope (All/Following/Off).
+- **Dark Chat** — bridged to `dnd_blackmarketplace`'s `darkchat_*` exports; org-scoped messaging threads, anonymous typing indicator (`someone is typing...`, no identity shown by design).
+- **Birdie** — Twitter/X-style social app: posts, replies (with the full formatting toolbar), likes, reposts, follows, profile editing (including the Avatar Builder, see below), photo attach (Gallery or fresh Camera capture), per-account notification scope (All/Following/Off).
+- **Payphone** — world-prop phones (proximity interaction, no phone item needed) that call through the exact same call session a normal 1:1 call uses, so the recipient gets a standard incoming-call experience; caller ID always shows as "Pay Phone". One consistent booth-bezel UI covers dial → ring → active → ended (own dedicated call UI, not the phone's own call overlay), with a contact-picker panel and an auto-hangup timer for unanswered calls.
 
 ## Media
 - **Camera** — real live viewfinder (`application/x-cfx-game-view`), front/back toggle, flash, aspect-ratio picker (1:1/3:4/9:16/Full), filters baked into the saved photo, upload via Fivemanage.
@@ -29,6 +30,8 @@ title: Features Overview
 
 ## Money
 - **mBanking** — myBCA-inspired UI: personal/job/gang/custom "organization" account switcher, hide/show balance, transfer by phone number or raw identifier, saved payees, in-phone confirmation before sending, refund-on-failure, push notifications for sent/received transfers, mirrored into Renewed Banking's own statement.
+- **Billing** (player side) — active/history tabs for job invoices, shows the issuing job's label (not just its internal key) with the operator name as a secondary line, Pay Now for pending bills, all payments logged into mBanking's own transaction history.
+- **EDC** — job-only payment terminal tool (`/billing_edc`, **F7**, plays the normal phone-open emote), bills a typed phone number or a live nearby player; unpaid bills auto-charge once overdue (online-only, retried the instant an offline target is next reachable). Also exposed as a cross-resource API (`exports.dnd_phone:CreateBill`, parameter order mirrors okokBilling) for other scripts to invoice a player without a physical EDC — see [Exports & Events](./Reference/exports-events).
 
 ## Vehicles / Property
 - **Garage** — vehicle list (JG Advanced Garages), real display names, garage label, Out/Parked/Impounded status, Locate (live position → garage fallback → notification), Valet.
@@ -38,7 +41,7 @@ title: Features Overview
 - **GPS** — bookmark current position with a label + optional photo, tap to set a real waypoint.
 - **Notepad** — title + description notes with an optional photo.
 - **Calculator** — purely client-side, standard iOS/Android-style operations.
-- **My Sim (SIM Card)** — mobile data plan purchase/status + WiFi zone detection; gates internet-dependent apps; foundation for a future dead-signal-zone system.
+- **My Sim (SIM Card)** — mobile data plan purchase/status + WiFi zone detection; gates internet-dependent apps; paired with the **Signal Strength System** (real tower-distance + altitude model — signal drops as you get farther from the nearest tower, and drops further at altitude, so mountaintops reliably lose signal), which separately gates Calls/Messages the same way Airplane Mode already does, on top of the internet gate above.
 - **Advertise** — player classifieds board (buy/sell/jasa listings), "Boost" to the top of the feed, deep-links into Cab's delivery flow ("Jasa Delivery").
 - **Economy Market** — read-only price/trend viewer for one `dnd_economy` agency (sparkline, demand badges, stock).
 - **Job** — emergency report, apply for a job, HRD management (on-duty staff roster, application review), threaded staff replies ("Pesan Masuk"), bridged to `dnd_jobmanagement`'s exports.

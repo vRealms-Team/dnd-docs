@@ -35,6 +35,25 @@ local ok = exports.dnd_phone:RecordBankHistory(source, identifier, 4200, 'Bought
 ```
 `ok == false` (no error) if `Config.Banking.StoreHistory` is off or the player has no registered phone device — both are safe no-ops. The actual database write happens in its own thread so this export never yields, which matters if you're calling it from inside your own `lib.callback` handler (a second nested yield across the resource boundary is what caused a hard-to-diagnose `ox_lib` callback-marshalling crash before this was fixed).
 
+### `dnd_phone:CreateBill(target, price, reason, society, societyName, authorIdentifier, dueMinutes)` (server)
+Creates a job invoice against a player from your own resource, exactly like the in-phone EDC tool (`/billing_edc`) does — the target either pays it themselves from their Billing app, or it's auto-collected once `dueMinutes` passes (online-only; retried the moment they're next reachable). Parameter order deliberately mirrors okokBilling's `CreateCustomInvoice`, so an existing integration usually only needs the export/event name changed.
+```lua
+---@param target number         -- player server id (a live source, not a phone number)
+---@param price number          -- amount to bill, clamped to Config.Billing.MinAmount/MaxAmount
+---@param reason string         -- shown to the target as the bill description
+---@param society string        -- job name credited when the bill is paid (e.g. 'police')
+---@param societyName string|nil -- display label; falls back to `society` if omitted
+---@param authorIdentifier string|nil -- who/what issued it, for record-keeping; falls back to `society`
+---@param dueMinutes number|nil -- minutes until auto-charge kicks in, default Config.Billing.DefaultDueDurationMinutes
+local result = exports.dnd_phone:CreateBill(targetSrc, 5000, 'Vehicle impound fee', 'police', 'Police Department', 'police', 60)
+-- result = { ok = true, billId = 'BILL...' } or { ok = false, reason = '...' }
+```
+Also reachable as a plain event, for parity with the export:
+```lua
+TriggerEvent('dnd_phone:billing:createInvoice', targetSrc, 5000, 'Vehicle impound fee', nil, 'police', 'Police Department', 'police', 60)
+```
+Both are deliberately **server-internal only** — the event is a plain `AddEventHandler`, not `RegisterNetEvent`, so it's reachable exclusively from another server script's own `TriggerEvent` call on the same FXServer instance, never over the network from a client. A network-exposed version would let any client bill an arbitrary player under a fake society name and have it auto-charged against their real balance.
+
 ## Public client events (server → client, for other resources)
 
 ### `dnd_phone:client:phoneNotify` (client)
@@ -65,9 +84,10 @@ Every server endpoint is registered through `Security.Callback` / `Security.NetE
 | `account.lua` | Setup Wizard / Settings (recovery) | `dnd_phone:account:*` |
 | `advertise.lua` | Advertise | `dnd_phone:advertise:*` |
 | `bank.lua` | mBanking | `dnd_phone:bank:*` |
+| `billing.lua` | Billing / EDC | `dnd_phone:billing:*` |
 | `birdie.lua` | Birdie | `dnd_phone:birdie:*` |
 | `cab.lua` | Downtown Cab Co. | `dnd_phone:cab:*` |
-| `calls.lua` | Phone (dialer) | `dnd_phone:calls:*` |
+| `calls.lua` | Phone (dialer) / Group Call | `dnd_phone:calls:*` |
 | `charging.lua` | My Sim / battery / Settings | `dnd_phone:charging:*` |
 | `contacts.lua` | Contacts | `dnd_phone:contacts:*` |
 | `custom_apps.lua` | Store / app registry | `dnd_phone:apps:*` |
@@ -81,8 +101,9 @@ Every server endpoint is registered through `Security.Callback` / `Security.NetE
 | `housing.lua` | Property | `dnd_phone:housing:*` |
 | `jobmanagement.lua` | Job | `dnd_phone:job:*` |
 | `mail.lua` | Mail | `dnd_phone:mail:*` |
-| `messages.lua` | Messages | `dnd_phone:messages:*` |
+| `messages.lua` | Messages / Angpao | `dnd_phone:messages:*` |
 | `notepad.lua` | Notepad | `dnd_phone:notepad:*` |
+| `payphone.lua` | Payphone | `dnd_phone:payphone:*` |
 | `powerbank.lua` | Powerbank item | `dnd_phone:powerbank:*` |
 | `profile.lua` | Contacts / account | `dnd_phone:profile:*` |
 | `service_station.lua` | Service Station | `dnd_phone:service:*` |
@@ -102,6 +123,8 @@ Each endpoint follows `dnd_phone:<module>:<action>` — e.g. `dnd_phone:bank:tra
 | `newMail` | `mail.lua` | Mail push |
 | `newMessage` | `messages.lua` | Messages push |
 | `contactOffer` | `share.lua` | Share-number-to-nearby incoming offer |
+| `phoneNotify` (`kind='billing'`) | `billing.lua` | New/overdue bill push |
+| `incomingCall` (payphone-originated) | `payphone.lua` | Reuses the normal call overlay for the recipient of a payphone call |
 
 ## Third-party exports dnd_phone itself calls
 See [Dependencies](../Installation/dependencies) for the full bridge list. Notably:

@@ -14,6 +14,9 @@ This documentation covers setup, configuration, and internals of the **dnd_phone
 Unlike most phone scripts, dnd_phone is **device-centric, not player-centric**: identity (number, contacts, messages, settings, …) lives on the physical `phone` item's `device_id`, not on the player. Losing the item means losing the phone; a role-play-friendly account/recovery system lets a player re-link a new item back to their previous device.
 
 ## Highlights
+- **Billing + EDC** — job-only payment terminal (`/billing_edc`, F7) that bills a phone number or a live nearby player; unpaid bills auto-charge once overdue, and a cross-resource `CreateBill` export lets other scripts invoice a player directly.
+- **Payphone** — world-prop phones that place a call through the same session machinery as a normal 1:1 call, with their own dedicated booth-bezel call UI.
+- **Signal Strength System** — real tower-distance + altitude signal model gating Calls/Messages, separate from (and layered on top of) the mobile data/WiFi internet gate.
 - **Bridge pattern** — swap framework (Qbox/QBCore/ESX), inventory, voice, banking, garage, housing without touching core logic; unsupported targets fall back to a `custom.lua` bridge you fill in yourself.
 - **Config-driven** — everything tunable from `config/*.lua`, kept open (`escrow_ignore`) for server owners even when the rest of the resource is escrowed.
 - **Security-first** — every NUI endpoint goes through a secured wrapper (`Security.Callback`/`Security.NetEvent`): server-side ownership checks, input validation/sanitization, and per-action rate limiting.

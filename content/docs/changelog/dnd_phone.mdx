@@ -2,6 +2,33 @@
 title: dnd_phone
 ---
 
+### v1.10.0 — Billing/EDC, Payphone, Signal Strength, Avatar Builder & AppGrid Pagination
+
+**New features**
+- **Billing + EDC** — job-only payment terminal tool (`/billing_edc`, **F7** keybind, plays the same emote as opening the phone normally). Bills either a typed phone number or a live nearby player; target identity is snapshotted at creation time so it's never tied to a fragile, reconnect-unsafe player `source`. Unpaid bills auto-charge once overdue (online-only — an offline player is instead swept the instant their phone next loads, since forcing an offline collection would otherwise touch the wrong account namespace on some banking bridges). Self-billing is allowed on purpose (money moves from your personal balance into your own job's shared account, a legitimate transfer). Players manage bills from a new **Billing** app (Active/History tabs, shows the issuing job's real label, Pay Now button); every payment is logged into mBanking's own transaction history.
+- **External Billing API** for other resources — `exports.dnd_phone:CreateBill(target, price, reason, society, societyName, authorIdentifier, dueMinutes)`, parameter order mirrors okokBilling's `CreateCustomInvoice` for easy migration. Server-internal only (not network-reachable), so a client can never forge a bill against another player. See [Exports & Events](/docs/resources/dnd_phone/Reference/exports-events).
+- **Payphone** — world-prop phones (proximity interaction, no phone item required) that place a call through the exact same session machinery a normal 1:1 call uses, so the recipient gets a fully standard incoming-call experience; caller ID always shows as "Pay Phone". One consistent booth-bezel UI covers dial → ring → active → ended (its own dedicated call UI, entirely separate from the phone's own call overlay — avoids an NUI-focus conflict that made the cursor disappear mid-call in an earlier build), with a contact-picker panel for the dial pad and an auto-hangup timer for unanswered calls. The phone-holding call emote now plays for payphone calls too.
+- **Signal Strength System** — real tower-distance + altitude signal model (no equivalent found in comparable phone resources) that separately gates Calls/Messages, the same way Airplane Mode already gates every internet-dependent app. Signal drops with distance from the nearest of several map-spread towers, and drops further at altitude, so mountaintops and remote areas reliably lose signal; polls every ~2.5s and only pushes a UI update when the bar count actually changes.
+- **Avatar Builder** — DiceBear-based avatar creator (hair, eyebrows, eyes, mouth, facial hair, accessories, clothing, skin, background categories) with a live preview, available from both the Settings account page and Birdie's profile editor; flattens to a PNG and uploads through the exact same pipeline a manually-taken profile photo already used, so no extra server/database changes were needed.
+- Home screen app grid now paginates instead of scrolling indefinitely.
+
+**Bug fixes**
+- Billing payments were deducting money without crediting it anywhere — now correctly credited to the issuing job's account.
+- Billing showed no readable job name once an EDC operator's character name was set (the name was fully replacing the job in the UI) — now shows the job's real label as the primary line, with the operator name as a secondary line.
+- Billing payments never appeared in mBanking's own transaction history.
+- Billing push notifications used the wrong (mBanking) icon.
+- Contacts' own call button had no Airplane Mode check at all before this pass.
+
+### v1.9.0 — Group Call, Angpao & Typing Indicators
+
+**New features**
+- **Group Call** — shared multi-party voice channel for group chats, built on the same call-session machinery as a normal 1:1 call, joined/left directly from the Group Chat UI.
+- **Angpao** — red-envelope-style money gift for group chats: the sender sets a total amount + packet count (deducted immediately), and the first N members to claim each get an equal share. Claims are race-safe via a single atomic guarded database update, so two people racing for the last slot (or a double-tap) can never both succeed.
+- **Typing indicators** — `[nama kontak] is typing...` in 1:1 Messages; a deliberately anonymous `someone is typing...` in Dark Chat, matching its no-real-identity design.
+
+**Bug fixes**
+- New-message push notifications were showing raw JSON instead of a readable preview.
+
 ### v1.8.0 — Dark Chat PIN Gate & Grouped Identity Picker
 
 **New features**

@@ -17,10 +17,17 @@ Only meant for development — not gated behind `Config.Debug`, so remove or res
 | `/dnd_testnotif [kind]` | `client/notifications.lua` | Fire a sample in-phone push notification |
 | `/dnd_testcall` | `client/modules/calls.lua` | Simulate an incoming call to yourself |
 
+## Job command (Billing / EDC)
+
+| Command | Default keybind | Purpose |
+|---|---|---|
+| `/billing_edc` (`Config.Billing.Command`) | **F7** (`Config.Billing.DefaultKey`) | Opens the standalone **EDC** (payment terminal) tool for jobs listed in `Config.Billing.Jobs` — bills a typed phone number or a live nearby player, plays the same phone-open emote as opening the phone normally |
+
 ## Keybinds
 | Action | Default | Config |
 |---|---|---|
 | Open/close phone | **F1** | `Config.OpenKey` (`config/config.lua`) |
+| Billing / EDC | **F7** | `Config.Billing.DefaultKey` (`config/billing.lua`) |
 | Camera shutter / flash / etc. | rebindable via ox_lib keybinds | `client/modules/camera.lua` |
 
 ## Admin command
