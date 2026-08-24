@@ -1,0 +1,78 @@
+---
+title: Getting Started
+---
+
+import ResourceLinks from "@/components/resource-links";
+
+<ResourceLinks />
+
+This documentation covers setup, configuration, and how the **dnd_blackmarketplace** anonymous trading system works.
+
+## What the resource does
+
+`dnd_blackmarketplace` is an anonymous peer-to-peer marketplace connecting suppliers, resellers, and buyers across organizational hierarchies. A High Table (Elite admin) controls the catalog and permissions; buyers and sellers transact **anonymously** — neither party knows the other's identity, only org names chosen at login. Couriers are a separate, anointing layer: they deliver orders without knowing who they're working for.
+
+The system bridges ESX and QBox with **escrow-ready** source code (server/client encrypted, shared/bridge/locales readable) and ships the NUI as a production-ready Vite bundle. Database is MySQL with run-time migrations.
+
+## Highlights
+
+- **Four user roles, anonymous by design**: Elite (admin), Seller (distributor), Buyer (reseller or consumer), Courier (delivery neutral).
+- **Server-authoritative** — every action (order, rating, payment, delivery) derives identity from a server-side session, never trusts the client. Authorization checks are gated by logged-in org ID before anything is mutated.
+- **Multi-access points** — Buyers can use a portable laptop, Sellers & Elite use fixed terminals, all can use flashdisks directly. Couriers use a tablet with a PIN-protected courier flashdisk.
+- **Org-based hierarchy** — Roles and permissions map to organizations, not characters. A single flashdisk (unlocked by PIN) grants access to an entire org's identity, and can be passed around, stolen, or revoked by Elite.
+- **Flexible payment** — Cash or Bank Transfer picked at the point of transaction (not a server-wide setting), with fallback to pending payout if a player is offline when payment completes.
+- **Order lifecycle with disputes & ratings** — Buyer creates order → Seller accepts/rejects → Ready for courier → Courier picks up & delivers → Payment settles → Rating & dispute period opens.
+- **Optional integrations** — `dnd_phone` for dark-chat (anonymous org-to-org messaging), `Renewed-Banking` for bank transfers, `dnd_jobmanagement` for linked job/gang org membership.
+
+## Core workflows
+
+### Elite admin sets up the marketplace
+
+1. Generate the Elite flashdisk (`/generate_elite_flashdisk`) — becomes the High Table login.
+2. Create items and set base prices and level-gated buyers — some items only L3+ can buy, some are whitelisted to specific orgs.
+3. Create Seller and Buyer orgs, generate their flashdisks, optionally link each to an ESX job or QBox gang for auto-membership.
+4. Run Elite Dashboard: create couriers, toggle item active/inactive, grant seller permissions, monitor activity logs.
+
+### Buyer picks something up
+
+1. Place or use a laptop (portable, buyer-centric entry point).
+2. Scan inventory for their flashdisk, enter PIN → logs in as their buyer org.
+3. Browse sellers and items (filtered by level/whitelist).
+4. Add to cart and checkout, picking a COD meeting point on an interactive map.
+5. Seller accepts/declines → order moves to ready-for-courier, or cancels.
+6. Courier picks it up, goes to the coordinates, delivers.
+7. Payment is split: seller gets 95%, Elite takes 5% commission (or seller gets 100% if they're an Elite-operated shop).
+8. Buyer can rate the seller and file disputes within a window after delivery.
+
+### Seller receives orders
+
+1. Login via terminal or flashdisk (fixed location or item-based).
+2. **Orders** tab shows incoming buyer orders (anonymized buyer org name).
+3. Accept → order moves to `approved` and the buyer is notified.
+4. **Ready to Deliver** → order goes into courier queue.
+5. **Waypoint** → set pickup location for the courier to retrieve it.
+6. Once courier marks delivered, payment settles automatically.
+
+### Courier delivers anonymously
+
+1. Hold the tablet, use a PIN-protected courier flashdisk, set an alias on first login.
+2. **Deliveries** tab shows the queue: all `ready_to_deliver` orders (no seller/buyer names, just "Seller" and "Buyer" generically).
+3. Claim delivery → route to the COD point → mark delivered → payment completes.
+4. Chat with buyer/seller is possible during delivery but closed after completion.
+
+## Recommended first steps
+
+1. Read [Features Overview](./features-overview) to understand the org hierarchy and order states.
+2. Install dependencies — see [Dependencies](./Installation/dependencies).
+3. Import the database schema — see [Database Setup](./Installation/database-setup).
+4. Build the frontend (`cd web && npm install && npm run build`).
+5. Configure `config.lua` — see [Configuration](./Installation/configuration).
+6. Set up an Elite master flashdisk and seed some test items.
+
+## Production-ready settings
+
+- `Config.Debug = false` (`shared/config.lua`)
+- Verify `web/dist` was built (`cd web && npm run build`) — it's git-ignored.
+- If using bank payments, set `Config.useBank = true` and ensure `Renewed-Banking` is running.
+- If NOT using bank payments, set `Config.useBank = false` for cash-only (safer for testing).
+- Optional: link job/gang for auto-membership — see [Configuration](./Installation/configuration).

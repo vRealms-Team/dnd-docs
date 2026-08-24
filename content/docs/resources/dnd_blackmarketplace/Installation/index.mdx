@@ -1,0 +1,43 @@
+---
+title: Installation
+---
+
+This section covers dependencies, database setup, and configuration for **dnd_blackmarketplace**.
+
+## Quick start
+
+1. **Add to fxmanifest** — copy the resource folder into your resources directory.
+2. **Install dependencies** — see [Dependencies](./dependencies).
+3. **Set up the database** — see [Database Setup](./database-setup).
+4. **Build the NUI** — `cd web && npm install && npm run build`.
+5. **Configure** — edit `shared/config.lua` — see [Configuration](./configuration).
+6. **Start the resource** — `ensure dnd_blackmarketplace`.
+
+## What you'll need
+
+- An existing **ESX or QBox** server (framework bridge is automatic).
+- **MySQL** database (Renewed-Banking is optional but recommended for bank payments).
+- **oxmysql** library (for database queries).
+- **ox_lib** (notifications, dialogs, utility functions).
+- **ox_target** (interaction system for terminals).
+- **ox_inventory** (item management and stashes for crafting).
+
+## Configuration overview
+
+Before starting, you'll need:
+- **Items** — item IDs and labels that match your server's item list (`items.lua` or whatever your inventory uses).
+- **Agencies/Orgs** — who your Sellers and Buyers are (job names, faction names, etc.).
+- **Payment method** — cash only, or cash+bank via Renewed-Banking.
+- **COD locations** — the meeting points buyers can pick from (interactive map).
+
+See [Configuration](./configuration) for the full rundown on theming, payment, and security settings.
+
+## Post-install checklist
+
+- [ ] Dependencies installed and running.
+- [ ] Database schema created (migrations run on resource start).
+- [ ] `shared/config.lua` matches your server (items, agencies, payment method).
+- [ ] NUI built (`web/dist` exists and contains `index.html`).
+- [ ] One Elite admin generated the master flashdisk (`/generate_elite_flashdisk`).
+- [ ] Test marketplace is seeded with test items.
+- [ ] Dark chat is working (if `dnd_phone` is installed).

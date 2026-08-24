@@ -1,0 +1,109 @@
+---
+title: Database Setup
+---
+
+**dnd_blackmarketplace** manages its own database schema via migrations. You do not need to manually import SQL — the resource creates all tables on first start.
+
+## Auto-migration system
+
+When the resource starts:
+
+1. The server loads `installation/database.sql` (initial schema: 13 CREATE TABLE statements).
+2. Migration v1 splits the file by statement and runs each against MySQL.
+3. Tables that already exist are skipped (`CREATE TABLE IF NOT EXISTS`).
+4. Subsequent migrations (v2–v28) run in order if they haven't been recorded yet.
+
+Each successful migration is recorded in `dnd_bm_migrations` so it never runs twice.
+
+## What gets created
+
+13 core tables:
+
+| Table | Purpose |
+|-------|---------|
+| `dnd_bm_migrations` | Migration history (version, name, run date). |
+| `dnd_bm_ht` | Legacy High Table record (rarely used). |
+| `dnd_bm_orgs` | Organizations (Elite, Seller, Buyer). |
+| `dnd_bm_flashdisks` | Flashdisk records (key, PIN hash, org ID). |
+| `dnd_bm_elite_members` | Elite org members + aliases. |
+| `dnd_bm_seller_members` | Seller org members + aliases. |
+| `dnd_bm_buyer_members` | Buyer org members + aliases. |
+| `dnd_bm_items` | Item catalog (id, label, base_price, buy_levels, whitelist). |
+| `dnd_bm_seller_items` | Seller inventory (quantity per seller per item). |
+| `dnd_bm_orders` | Orders (id, seller_id, buyer_id, status, courier_id). |
+| `dnd_bm_transactions` | Transaction ledger (order_id, seller_id, buyer_id, amount). |
+| `dnd_bm_flashdisk_logs` | Flashdisk activity log. |
+| `dnd_bm_activity_logs` | General activity audit trail (login, order, rating, dispute). |
+
+Plus 5 more for ratings, disputes, inventory logs, couriers, and announcements (v28 tables total).
+
+## On first start
+
+1. Check the console for `[DND Blackmarket] All migrations completed.`
+2. If migrations fail (e.g., MySQL permission denied), you'll see `[DND Blackmarket] Migration v1 failed!` — fix the error and restart the resource.
+3. If v1 fails partway (connection timeout), restart — it's not recorded, so it re-runs and picks up where it left off.
+
+## Checking the database
+
+Once migration v1 completes, you can query the database to verify:
+
+```sql
+SELECT * FROM dnd_bm_migrations;
+-- Should show: v1, v2, v3, ... (up to v28)
+
+SELECT * FROM dnd_bm_orgs LIMIT 1;
+-- Should return (empty until you create orgs).
+
+SELECT * FROM dnd_bm_items LIMIT 1;
+-- Should return (empty until Elite adds items).
+```
+
+## Resetting the database (if needed)
+
+If you need to wipe and start over:
+
+```sql
+-- Drop all tables
+DROP TABLE IF EXISTS dnd_bm_migrations;
+DROP TABLE IF EXISTS dnd_bm_ht;
+-- ... (drop all 13+)
+```
+
+Then restart the resource — migration v1 will re-run and recreate everything.
+
+**Warning**: This erases all data (orders, orgs, items, logs). Only do this for development/testing.
+
+## Custom schema changes
+
+If you need to add columns or custom tables:
+
+1. **Do not edit `installation/database.sql`** — it's split-and-run per statement with no session state, so `SET @var` and multi-line statements will fail.
+2. **Instead, create a new Lua migration** in `server/database.lua`:
+
+```lua
+MIGRATIONS[29] = {
+    name = 'my_custom_change',
+    up = function()
+        local query = "ALTER TABLE `dnd_bm_orders` ADD COLUMN `custom_field` VARCHAR(100)"
+        local result = MySQL.query.await(query)
+        if not result then
+            Utils.log('Failed to add custom_field', 'error')
+            return false
+        end
+        return true
+    end
+}
+```
+
+Restart the resource — migration v29 will run once and be recorded.
+
+## Backup recommendations
+
+Before going live:
+
+```bash
+# Daily backup (MySQL)
+mysqldump -u root -p game_db dnd_bm_* > backup_$(date +%Y%m%d).sql
+```
+
+Keep backups in case you need to restore a corrupted order or activity log.

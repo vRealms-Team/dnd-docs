@@ -1,0 +1,89 @@
+---
+title: Dependencies
+---
+
+**dnd_blackmarketplace** requires the following resources running on your server.
+
+## Required
+
+### oxmysql
+Database query library. The resource loads the `@oxmysql/lib/MySQL.lua` file and uses its `MySQL.query.await()` and `MySQL.insert.await()` functions.
+
+- Repository: [overextended/oxmysql](https://github.com/overextended/oxmysql)
+- Config: Add `ensure oxmysql` to `server.cfg` **before** dnd_blackmarketplace.
+
+### ox_lib
+Utility library for notifications, dialogs, targeting helpers, and more.
+
+- Repository: [overextended/ox_lib](https://github.com/overextended/ox_lib)
+- Config: Add `ensure ox_lib` to `server.cfg` **before** dnd_blackmarketplace.
+
+### ox_target
+Interaction system for market terminals (Elite & Seller fixed locations).
+
+- Repository: [overextended/ox_target](https://github.com/overextended/ox_target)
+- Config: Add `ensure ox_target` to `server.cfg` **before** dnd_blackmarketplace.
+
+### ox_inventory
+Item and stash management. The resource uses ox_inventory for:
+- Storing flashdisk items (with metadata encoding org ID, PIN, permissions).
+- Managing the tablet item.
+- Crafting stashes (optional Elite feature).
+
+- Repository: [overextended/ox_inventory](https://github.com/overextended/ox_inventory)
+- Config: Add `ensure ox_inventory` to `server.cfg` **before** dnd_blackmarketplace.
+
+### ESX or QBox framework
+One of these must be running.
+
+- **ESX** — The resource auto-detects and uses `exports.es_extended:getPlayer()`, `exports.es_extended:getPlayerFromId()`, etc.
+- **QBox** — Auto-detects and uses `QBCore` exports.
+- **Auto-detection** — Set `Config.Framework = 'auto'` (default) to auto-detect. Or hardcode to `'ESX'` or `'QBOX'`.
+
+## Optional (but recommended)
+
+### Renewed-Banking
+Bank transfer support for order payments. If installed, set `Config.useBank = true` to enable bank payments alongside cash.
+
+- Repository: [Renewed-Roleplay/Renewed-Banking](https://github.com/Renewed-Roleplay/Renewed-Banking)
+- When enabled, both Buyers and Sellers set a **bank account** (for their org) in the Dashboard/Settings, and orders can be paid/received via transfer instead of cash.
+
+### dnd_phone
+Dark chat system (org-to-org anonymous messaging during order lifecycle).
+
+- Repository: [vRealms-Team/dnd_phone](https://github.com/vRealms-Team/dnd_phone)
+- The marketplace and phone auto-detect each other via exports and sync identities (org ID, member alias, threads per order).
+- Optional but strongly recommended for immersion.
+
+### dnd_jobmanagement
+(Future integration) — placeholder for job-related logging or document printing from the marketplace.
+
+## Recommended server.cfg order
+
+```cfg
+# Core frameworks
+ensure es_extended  # OR ensure qb-core
+
+# Overextended library suite
+ensure oxmysql
+ensure ox_lib
+ensure ox_target
+ensure ox_inventory
+
+# Optional integrations
+ensure Renewed-Banking   # if using bank payments
+ensure dnd_phone         # for dark chat
+ensure dnd_jobmanagement # for future integration
+
+# Marketplace
+ensure dnd_blackmarketplace
+```
+
+## Checking dependencies at startup
+
+The resource logs its startup sequence to the console:
+- `[DND Blackmarket] Database connected successfully` — oxmysql is working.
+- `[DND Blackmarket] Starting database migrations...` — schema is being set up.
+- `[DND Blackmarket] All migrations completed.` — ready to use.
+
+If any dependency is missing, you'll see an error in the console — check the name and make sure it's `ensure`d before dnd_blackmarketplace.

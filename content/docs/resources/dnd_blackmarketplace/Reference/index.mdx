@@ -1,0 +1,166 @@
+---
+title: Reference
+---
+
+## Commands
+
+All commands are server-side only and check the player's role/permissions server-side.
+
+### Elite admin commands
+
+| Command | Usage | Effect |
+|---------|-------|--------|
+| `/generate_elite_flashdisk <name> <pin>` | Generate initial Elite flashdisk | Creates Elite org + flashdisk, logs key to console |
+| `/create_item <id> <label> <price> <category> <description>` | Add item to catalog | Item available for sellers (if given permission) |
+| `/create_seller <faction> <name> <pin> [player_id]` | Create seller org | Seller player given flashdisk if online |
+| `/create_buyer <type> <name> <pin> [player_id]` | Create buyer org | Buyer player given flashdisk if online |
+| `/generate_seller_flashdisk <seller_id> <pin>` | Generate extra seller key | Allows sharing seller access |
+| `/generate_buyer_flashdisk <buyer_id> <pin>` | Generate extra buyer key | Allows sharing buyer access |
+| `/generate_elite_flashdisk <name> <pin>` | Generate additional Elite key | For multi-owner setups |
+| `/give_tablet <player_id>` | Give tablet item | Player receives tablet item |
+
+### Seller commands
+
+None (all via NUI dashboard).
+
+### Buyer commands
+
+None (all via NUI dashboard).
+
+### Courier commands
+
+None (all via NUI dashboard).
+
+## NUI actions (Lua callbacks)
+
+The frontend sends actions to the server via `TriggerServerEvent('dnd_blackmarket:nuiCallback', action, data)`. Server validates everything before returning.
+
+### Authentication
+
+| Action | Parameters | Returns | Notes |
+|--------|-----------|---------|-------|
+| `validateFlashdisk` | `orgId, orgType, flashdiskKey` | Validation result | Called on terminal/laptop access |
+| `authenticateUser` | `pin` | Auth success + session token | PIN-based login |
+
+### Elite dashboard
+
+| Action | Parameters | Returns | Notes |
+|--------|-----------|---------|-------|
+| `elite_getSellers` | — | List of all sellers | — |
+| `elite_getBuyers` | — | List of all buyers | — |
+| `elite_getItems` | — | Item catalog | — |
+| `elite_createItem` | Item data | `{success, itemId}` | — |
+| `elite_grantPermission` | `sellerId, [...itemIds]` | `{success}` | Seller can now list item |
+| `elite_suspendSeller` | `sellerId` | `{success}` | Disable seller access |
+| `elite_generateFlashdisk` | `orgId, role, pin, name` | `{success, flashdiskKey}` | — |
+
+### Seller orders
+
+| Action | Parameters | Returns | Notes |
+|--------|-----------|---------|-------|
+| `seller_getOrders` | — | List of orders for this seller | — |
+| `acceptOrder` | `orderId` | `{success}` | Change status to `approved` |
+| `rejectOrder` | `orderId` | `{success}` | Change status to `declined` |
+| `readyToDeliver` | `orderId` | `{success}` | Change status to `ready_to_deliver` |
+| `setWaypoint` | `orderId` | `{success, location}` | Return COD coords + set GPS |
+
+### Buyer shopping
+
+| Action | Parameters | Returns | Notes |
+|--------|-----------|---------|-------|
+| `buyer_getMarketplace` | — | List of sellers + item counts | — |
+| `buyer_getSellerItems` | `sellerId` | Items available from this seller | Filtered by buyer level |
+| `createOrder` | `sellerId, items, codLocation, note` | `{success, orderId, total}` | New order + notification to seller |
+| `addToWhistlist` | `itemId` | `{success}` | Wishlist for tracking |
+| `removeFromWhistlist` | `itemId` | `{success}` | — |
+
+### Courier
+
+| Action | Parameters | Returns | Notes |
+|--------|-----------|---------|-------|
+| `getCourierDeliveries` | — | List of orders ready for delivery | Anonymized (no seller name) |
+| `claimDelivery` | `orderId` | `{success, courierId}` | Assign courier to order |
+| `startDelivery` | `orderId` | `{success, location}` | Status: `on_the_way` + GPS waypoint |
+| `markDelivered` | `orderId` | `{success}` | Complete order + settle payment |
+| `courierSetAlias` | `alias` | `{success, alias}` | Set persistent courier display name |
+
+### Ratings & disputes
+
+| Action | Parameters | Returns | Notes |
+|--------|-----------|---------|-------|
+| `submitRating` | `orderId, rating, comment` | `{success}` | Only buyer can rate |
+| `fileDispute` | `orderId, reason` | `{success}` | Either party can dispute |
+| `getSellerReputation` | `sellerId` | `{rating, totalRatings, reviews}` | Reputation card |
+
+### Settings
+
+| Action | Parameters | Returns | Notes |
+|--------|-----------|---------|-------|
+| `updateBankAccount` | `bankAccount` | `{success}` | Seller sets payout account |
+| `getBankAccount` | — | `{bankAccount}` | Retrieve current account |
+| `updateBuyerName` | `name` | `{success}` | Buyer org display name |
+| `updateSellerName` | `name` | `{success}` | Seller org display name |
+
+### Chat (requires dnd_phone)
+
+| Action | Parameters | Returns | Notes |
+|--------|-----------|---------|-------|
+| `chat_getThreads` | — | Active chat threads | Open during delivery window |
+| `chat_sendMessage` | `threadId, content` | `{success}` | Send anonymous message |
+| `chat_getMessages` | `threadId` | Messages in thread | — |
+
+## Exports
+
+The resource exposes some functions for integration with other resources.
+
+### Darkchat exports (for dnd_phone)
+
+```lua
+-- Get all identities for a player (seller, buyer, courier, elite)
+local identities = exports.dnd_blackmarketplace:darkchat_getIdentities(source)
+
+-- Verify PIN for an org
+local ok = exports.dnd_blackmarketplace:darkchat_verifyPin(orgId, orgType, pin)
+
+-- Get list of chat partners for this org
+local partners = exports.dnd_blackmarketplace:darkchat_getChatOrgs(orgId, orgType)
+```
+
+## Events
+
+Server-side events broadcast from the marketplace to other resources.
+
+| Event | Data | Notes |
+|-------|------|-------|
+| `dnd_blackmarket:orderCreated` | `{orderId, sellerId, buyerId}` | New order created |
+| `dnd_blackmarket:orderAccepted` | `{orderId}` | Seller accepted |
+| `dnd_blackmarket:orderCompleted` | `{orderId, total}` | Payment settled |
+| `dnd_blackmarket:ratingSubmitted` | `{orderId, buyerId, rating}` | After completion window |
+| `dnd_blackmarket:deliveryStarted` | `{orderId, courierId}` | Courier en route |
+
+## Database tables
+
+See [Database Setup](../Installation/database-setup) for full schema documentation.
+
+## Error codes
+
+Common errors returned by callbacks:
+
+| Error | Cause |
+|-------|-------|
+| `Access denied` | Server session doesn't match the required role |
+| `Order not found` | Order ID doesn't exist or is invalid |
+| `Insufficient funds` | Buyer doesn't have enough cash/bank balance |
+| `Invalid PIN` | PIN didn't match the hashed value |
+| `Already rated` | Buyer already submitted a rating for this order |
+| `Dispute already filed` | Only one dispute per order allowed |
+
+## Troubleshooting
+
+**"Buyer is not online"** — Order completion requires the buyer to be online (or at least carrying their flashdisk). This is intentional to prevent free goods. Wait for them to log in.
+
+**"Order is not in a completable status"** — Order must be `approved`, `ready_to_deliver`, or `on_the_way` before marking complete. Seller must accept and mark it ready first.
+
+**"Payment failed"** — Check `Config.useBank` and whether Renewed-Banking is running. Verify buyer's bank account is set if using bank mode.
+
+**NUI won't open** — Verify the flashdisk exists in inventory, PIN is correct, and the org is marked `is_active = 1` in the database.

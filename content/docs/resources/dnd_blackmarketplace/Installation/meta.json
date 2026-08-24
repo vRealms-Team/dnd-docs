@@ -1,0 +1,9 @@
+{
+  "title": "Installation",
+  "pages": [
+    "index",
+    "dependencies",
+    "database-setup",
+    "configuration"
+  ]
+}

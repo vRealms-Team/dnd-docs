@@ -1,0 +1,175 @@
+---
+title: Features Overview
+---
+
+## Organization hierarchy & roles
+
+The system centers on **organizations**, not characters. Each org has a role that determines what it can do, and is accessed via a flashdisk + PIN combo that can be shared, stolen, or revoked.
+
+| Role | Can buy? | Can sell? | Can admin? | Flashdisk tied to | Visibility |
+|------|----------|-----------|-----------|------------------|------------|
+| **Elite** | (via shops) | (via shops) | ✓ All | Elite org | See all transactions |
+| **Seller** (L3) | ✓ Yes | ✓ Yes | ✗ Own items only | Seller org | See own orders + ratings |
+| **Buyer** (L1–3) | ✓ Yes | ✗ No | ✗ None | Buyer org | See own orders + cart |
+| **Courier** | ✗ No | ✗ No | ✗ None | Individual (citizen ID) | See delivery queue only |
+
+### Anonymity model
+
+- **Buyer ↔ Seller**: Both see each other's org name (chosen at login), but never real org IDs or character names. Elite knows both sides.
+- **Courier ↔ Both**: Courier sees only "Seller" and "Buyer", never the real org names. Seller/Buyer don't know which courier has their order.
+- **Seller ↔ Seller**: Sellers cannot see each other's orders or inventory.
+- **Buyer ↔ Buyer**: Buyers cannot see each other's orders or cart.
+
+## Access points
+
+### Flashdisk (item-based, all roles)
+- Use the `dnd_flashdisk` item from inventory.
+- Auto-fills flashdisk key, prompts for PIN.
+- Works for Elite, Seller, Buyer, and Courier (latest v1.1.0+).
+
+### Laptop (portable, buyers only)
+- Prop placed in the world via raycast (client-side placement mode).
+- Gives any buyer org instant access (PIN not stored on the laptop, only the org ID is).
+- Allows buyers to shop from anywhere without carrying a flashdisk.
+
+### Market Terminals (fixed locations, Elite + Seller)
+- One-time configured in `Config.MarketAccess` per role.
+- Redirects to the standard login (flashdisk + PIN).
+- Elite and Sellers must carry their flashdisk to use it.
+
+### Tablet (portable, Elite + Courier)
+- Item: `dnd_elite_tablet`.
+- Requires a corresponding Elite or Courier flashdisk in inventory.
+- Courier tablet plays a handheld animation instead of sit-and-type.
+- Elite can pick which Elite org to open (if carrying multiple).
+
+## Flashdisk model
+
+A flashdisk encodes:
+- **Org ID** (or citizen ID for couriers)
+- **Org Name** (display name at login)
+- **PIN** (hashed, server-side validation only)
+- **Role** (elite/seller/buyer/courier)
+- **Permissions** (items the seller can list, buyer level to determine item access)
+
+Flashdisks are **physical items** in ox_inventory. They can be:
+- Dropped, picked up, stolen, traded.
+- Revoked by Elite (marked `suspended` in DB, access denied on login).
+- Passed to another player to share org access.
+
+## Item catalog
+
+Items are stored globally with:
+- **Base price** (set by Elite).
+- **Buy levels** — array of Strata levels allowed to buy it (L1 buys everything, L3 can get restricted items).
+- **Org buyer whitelist** — explicit org IDs allowed even if their level doesn't match.
+- **Category** (drugs, weapons, money, misc) — cosmetic, for filtering.
+- **Max buy quantity** — per order limit.
+- **Active/Inactive toggle** — admins can toggle without deleting.
+
+Sellers cannot create items (Elite only) but can set per-item quantities on their own shop listing (from Elite Dashboard → Seller Items).
+
+## Order lifecycle
+
+```
+Pending → Accepted → Approved/Ready to Deliver → On the Way → Completed
+       ↘  Declined
+         ↘ Cancelled (anytime before courier pickup)
+```
+
+### Buyer creates order
+- Picks item(s) from a seller's listing.
+- Selects a COD (cash-on-delivery) location from an interactive map.
+- Confirms payment method: Cash or Bank.
+- Order status: `pending`.
+
+### Seller's turn
+- **Accept** → status: `approved`.
+  - Seller can now set a waypoint (pickup location for courier).
+  - Buyer is notified.
+- **Reject** → status: `cancelled`.
+  - Buyer is notified.
+
+### Seller marks ready for courier
+- Status: `ready_to_deliver`.
+- Order enters the courier queue.
+- Buyer is notified.
+
+### Courier picks up and delivers
+- Claim delivery → status stays `ready_to_deliver` (courier is assigned).
+- Start delivery → status: `on_the_way`.
+  - Courier is given the COD location to set a waypoint.
+- Mark delivered → calls `completeOrder`.
+  - Payment splits (seller 95% / Elite 5%).
+  - Status: `completed`.
+
+### Post-delivery
+- Buyer can rate the seller (1–5 stars, optional comment).
+- Either party can file a dispute (only one per order).
+
+## Org-linked jobs/gangs (optional)
+
+Elite can optionally link a Seller or Buyer org to an ESX job or QBox gang. When enabled:
+- Any player whose **current job/gang** matches automatically becomes a member of that org.
+- They can log into the marketplace without needing a flashdisk — their job/gang IS their login.
+- They show as "via job match" in membership lists (hidden if hardcoded role).
+- This is live: a player who changes jobs immediately loses membership.
+
+## Payment flow
+
+### Cash mode (`Config.useBank = false`)
+- Buyer's cash decreases.
+- Seller's cash increases (seller payout = 95% of order total).
+- Elite commission comes out of the difference.
+
+### Bank mode (`Config.useBank = true`, requires Renewed-Banking)
+- Buyer's bank account (per-org, set in Dashboard) is charged the full order total.
+- Seller's bank account (per-org, set in their settings) receives the payout (seller amount).
+- Elite's bank account receives the commission.
+- Falls back to cash if either account is not set or offline.
+
+### Payment when buyer is offline
+- If the buyer is not online (or not carrying their flashdisk) when courier completes, completion fails and order stays `on_the_way`.
+- Server does not charge them a phantom amount.
+- Order can be completed once they log back in.
+
+## Dark chat (optional, requires dnd_phone)
+
+Organizations can message each other anonymously:
+- **Seller ↔ Buyer**: Open during `approved`/`ready_to_deliver`, closes on completion.
+- **Seller ↔ Courier**: Open during `ready_to_deliver`/`on_the_way`, closes on completion.
+- **Buyer ↔ Courier**: Open during `on_the_way`, closes on completion.
+- Messages show org name and member alias (or real char name if no alias set).
+- Real org IDs are never exposed; messages are tied to the order.
+
+## Ratings & disputes
+
+### Rating (buyer → seller, after completion)
+- 1–5 stars with optional comment.
+- Only the buyer can rate.
+- Cumulative: sellers show average rating + review count on their profile.
+
+### Dispute (buyer or seller, after completion)
+- Single file per order (first one wins).
+- Either party can open; text field for reason.
+- Logged and timestamped for Elite review.
+
+## Authority & security
+
+Every NUI action goes through server-authoritative validation:
+
+1. **Session tracking** (`_G.BMSessions[src]` in Lua) — server records who this player really is after PIN login.
+2. **No client trust** — org ID, payment method, and party resolution all come from the session, never from client payload.
+3. **Org scoping** — handlers that touch multiple orgs verify the caller is Elite or the party in question.
+4. **Request signing** — each NUI callback gets a server-side-assigned `_callId` so results cannot be swapped between requests.
+
+The address-bar for shipping/waypoints, order IDs for lookups, and payment amounts for splits never reach the client as inputs — they are hydrated from DB only.
+
+## Crafting (optional Elite feature)
+
+Elite orgs can enable crafting with:
+- A **Materials stash** (ox_inventory storage per org) — input inventory.
+- An **Output stash** (ox_inventory storage per org) — finished goods.
+- **Recipes** — JSON on item rows defining ingredients + quantities.
+
+Server always reads current stash quantities, never trusts client-sent numbers. A complete recipe consumes ingredients and produces output in one atomic transaction per craft.

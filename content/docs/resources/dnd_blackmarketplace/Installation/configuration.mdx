@@ -1,0 +1,193 @@
+---
+title: Configuration
+---
+
+Edit `shared/config.lua` to configure the marketplace for your server.
+
+## Framework
+
+```lua
+Config.Framework = 'auto'  -- 'auto', 'ESX', or 'QBOX'
+Config.Locale = 'en'       -- 'en' or 'id'
+Config.Debug = false       -- Set true for verbose logging
+```
+
+## NUI theme colors
+
+```lua
+Config.Color = {
+    mainColor      = '#ff4444', -- Primary accent
+    mainColorLight = '#ff6666', -- Hover states
+    buttonColor    = '#cc3333', -- Dark shade
+    successColor   = '#4ade80', -- Approve/ok
+    warningColor   = '#ffaa00', -- Pending/urgent
+    dangerColor    = '#f87171', -- Reject/delete
+}
+```
+
+These are CSS custom properties pushed to the Vue frontend on load.
+
+## Items
+
+```lua
+Config.Items = {
+    flashdisk = 'dnd_flashdisk',    -- Flashdisk item name
+    laptop    = 'dnd_elite_laptop',  -- Laptop prop item
+    tablet    = 'dnd_elite_tablet',  -- Tablet item
+}
+
+Config.ItemCategories = {
+    weapons = 'Weapons',
+    drugs   = 'Drugs',
+    money   = 'Money',
+    misc    = 'Miscellaneous',
+}
+```
+
+## Strata levels (hierarchy)
+
+```lua
+Config.Levels = {
+    { name = 'The Pawns',    subtitle = 'Street Rats',    color = '#9ca3af' },  -- L1
+    { name = 'Affiliates',   subtitle = 'The Family',     color = '#60a5fa' },  -- L2
+    { name = 'The Proxy',    subtitle = 'The Cartel',     color = '#fbbf24' },  -- L3
+    { name = 'The Generals', subtitle = 'The Iron Hand',  color = '#a78bfa' },  -- L4
+    { name = 'Elite Global', subtitle = 'The Architects', color = '#ff4444' },  -- L5
+}
+```
+
+L1 can buy anything, L3 can also sell (perantara), L5 is Elite admin.
+
+## Market access locations
+
+Where Sellers and Elite can use fixed terminals:
+
+```lua
+Config.MarketAccess = {
+    elite = {
+        enabled = true,
+        coords = {
+            vector3(-74.79, -2563.21, 5.83),
+            vector3(1130.28, -467.72, 62.81),
+        },
+        heading = 0.0,
+        label = 'Elite Terminal',
+    },
+    seller = {
+        enabled = true,
+        coords = {
+            vector3(-75.85, -2560.80, 5.82),
+            vector3(1136.41, -466.30, 62.81),
+        },
+        heading = 0.0,
+        label = 'Seller Terminal',
+    },
+}
+```
+
+`coords` can be a single `vector3` or a table of them (multi-location).
+
+## COD locations (buyer checkout map)
+
+```lua
+Config.CODLocations = {
+    {
+        name = 'Downtown',
+        coords = { x = 425.5, y = -982.3, z = 29.4 }
+    },
+    {
+        name = 'Docks',
+        coords = { x = 1177.9, y = -1560.4, z = 34.7 }
+    },
+    -- ... more locations
+}
+
+Config.MapCalibration = {
+    topLeft = { x = -200, y = 1000 },
+    bottomRight = { x = 2000, y = -2000 },
+}
+```
+
+Used by the interactive map in buyer checkout. `MapCalibration` is the world-to-map coordinate transform.
+
+## Payment settings
+
+```lua
+Config.useBank = true                   -- true = bank + cash, false = cash only
+Config.BankResource = 'Renewed-Banking' -- Bank integration resource name
+
+Config.Currency = {
+    symbol = '',                   -- '' = no symbol, '$', 'Rp ', etc
+    position = 'before',           -- Where symbol appears
+    useThousandsSeparator = true,  -- 1,000 or 1000
+    thousandsSeparator = '.',      -- ',' or '.'
+    decimalPlaces = 0              -- 0 for whole currency, 2 for cents
+}
+```
+
+### Bank payments require Renewed-Banking
+
+If `Config.useBank = true`:
+1. Ensure `Renewed-Banking` is running.
+2. Buyers/Sellers set their bank account in Dashboard/Settings (must exist in Renewed-Banking).
+3. Orders with bank payment use that account.
+
+If `Config.useBank = false`, cash is the only option (faster for testing).
+
+## Order settings
+
+```lua
+Config.TaxRate = 0.15          -- 15% tax (Elite commission)
+Config.MaxOrdersPerDay = 10    -- Not enforced yet
+Config.OrderTimeout = 3600     -- 1 hour (not enforced yet)
+
+Config.LaptopModel = 'prop_laptop_01a'
+Config.LaptopPlacement = {
+    raycastDistance = 8.0,
+    takeEmote = 'PROP_HUMAN_BUM_BIN',
+    takeDuration = 1200
+}
+```
+
+`TaxRate` is split: seller gets 95%, Elite gets 5%.
+
+## Crafting (optional)
+
+```lua
+Config.Crafting = {
+    materialsStashSlots = 50,
+    materialsStashWeight = 100000,
+    outputStashSlots = 30,
+    outputStashWeight = 50000,
+}
+```
+
+Used by Elite crafting stations if enabled.
+
+## Locales
+
+Locales are split into two files:
+
+- `locales/en.lua` (English, distributed with resource)
+- `locales/id.lua` (Indonesian, distributed with resource)
+
+Both are loaded at startup and merged into a global table. You can edit them or add new locale files.
+
+## Common configuration mistakes
+
+| Mistake | Fix |
+|---------|-----|
+| `Config.Items.flashdisk = 'flashdisk'` but server uses `dnd_flashdisk` | Update to match your item name |
+| `Config.useBank = true` but Renewed-Banking not running | Set to `false` for testing, or start Renewed-Banking |
+| `Config.Locale = 'en'` but `locales/en.lua` not found | Check file exists or use default en |
+| Market terminal coords outside the map | Use known world coordinates and test `/gps` there first |
+
+## Testing your config
+
+1. Start the resource: `ensure dnd_blackmarketplace`.
+2. Check console for `[DND Blackmarket] Initialization complete` without errors.
+3. Open the Elite Dashboard (`/ht` or via elite terminal).
+4. If colors look wrong, check `Config.Color` hex values.
+5. If payment fails, verify `Config.useBank` matches your setup.
+
+All config changes require a resource restart (`restart dnd_blackmarketplace`).
