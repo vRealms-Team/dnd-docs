@@ -1,0 +1,147 @@
+---
+title: Transaction Tax & Upkeep
+---
+
+## Overview
+
+Tax is a **money sink**: a portion of every transaction (Sell or Buy) is collected and routed out of the player/agency economy. Paired with stash **upkeep** costs (the cost of holding inventory), tax removes a meaningful amount of currency from circulation, preventing runaway inflation.
+
+## Tax vs. upkeep
+
+### Transaction tax
+
+Collected at the moment a Sell or Buy completes. Separate rates for Sell and Buy.
+
+- **Sell tax** — charged on the seller's proceeds. Config: `Config.Tax.sellRate` (e.g., 0.05 = 5%).
+- **Buy tax** — charged on the buyer's total. Config: `Config.Tax.buyRate` (e.g., 0.08 = 8%).
+
+### Stash upkeep
+
+A **recurring cost** for holding inventory. Charged hourly (not per-transaction), per agency.
+
+- **Flat fee** — fixed cost per agency per cycle (e.g., $5,000).
+- **Per-unit fee** — $ per unit held (e.g., $10 per item).
+
+Total upkeep = flat + (perUnit × items_held). Charged from the agency's job account, same as Sell payouts.
+
+## Where tax goes
+
+```lua
+Config.Tax = {
+    destination = 'government',  -- job name, or 'burn'
+}
+```
+
+### Treasury (job account)
+
+If `destination` is a job name (e.g., `'government'`), tax is **transferred** to that job's account in `Renewed-Banking`. The money supply stays constant; government becomes the body that throttles economic flow.
+
+Example: if `Config.Tax.destination = 'government'`, every tax collected goes into the `government` job account. Government staff can then decide how to spend it (pay agency stipends, NPC wages, etc.).
+
+### Burn (destroyed)
+
+If `destination = 'burn'`, tax is **destroyed**. Money leaves the supply entirely. The economy shrinks over time, which can be useful for servers that don't want a persistent treasury.
+
+## Rounding behavior
+
+Tax is always rounded **DOWN** (`math.floor`):
+
+- 5% tax on $100 = $5.00 → **charged $5** (player gets $95, treasury gets $5)
+- 5% tax on $101 = $5.05 → **charged $5** (player gets $96, treasury gets $5 — discrepancy favors the player)
+
+This ensures the player never sees a tax amount on-screen that doesn't match what was actually charged.
+
+## Configuration
+
+```lua
+Config.Tax = {
+    Enabled = true,
+    destination = 'government',
+
+    sellRate = 0.05,  -- 5% of seller's payout
+    buyRate  = 0.08,  -- 8% of buyer's total
+
+    upkeep = {
+        Enabled       = true,
+        intervalHours = 24,
+        flat          = 5000,
+        perUnit       = 10,
+    },
+}
+```
+
+### Best effort design
+
+Tax collection is **best-effort**: it runs AFTER the transaction (Sell/Buy) has already completed and money has moved. If a tax deposit to the treasury fails (e.g., the banking bridge is down), the transaction still stands and the money stays lost.
+
+This is deliberate: unwinding a completed trade because a side-effect failed would be worse than a one-time discrepancy in the treasury. Failures are **logged loudly** so they're not silent, but the trade doesn't roll back.
+
+## Player perspective
+
+### On Sell
+
+The player sees the **net payout after tax** when confirming the sale in the menu. If sell rate is 5%, they see:
+
+```
+Item:    Iron Ore (50 units)
+Subtotal: $5,000
+Tax (5%):  -$250
+Payout:    $4,750
+```
+
+Commission (if any) is applied BEFORE tax, so a staff member's cut doesn't increase the tax burden.
+
+### On Buy
+
+Similarly, at checkout the player sees tax included:
+
+```
+Iron Ore (50 units): $4,000
+Tax (8%):             -$320
+Total:               $4,320
+```
+
+If the buyer is "instansi" (has the job) vs "gang" (doesn't), the base price shifts first (via spread discount/markup), THEN tax is applied to that adjusted price.
+
+## Agency perspective
+
+Agencies are **charged tax the same way as players** when they accept a Sell or Buy order. The tax is withdrawn from their job account along with the payout:
+
+- Sell: agency balance is debited for payout + staff commission + tax
+- Buy: agency's balance is credited (revenue from the sale)
+
+Upkeep is charged independently on the hourly cycle, deducted from the agency's balance as well.
+
+## Example: full transaction breakdown
+
+**Agency: Mechanic Shop. Scenario: Player sells 100 Iron Ore.**
+
+Config:
+```
+sellRate = 0.05
+commissionFromAgency = true
+commission = 0.1
+```
+
+Flow:
+
+1. **Player starts** with 100 Iron Ore, sees offer: $5,000/unit = $500,000 total
+2. **Subtotal after spread**: $500,000 (no discount/markup, it's NPC)
+3. **Commission**: 10% = $50,000
+4. **Subtotal after commission**: $450,000 (paid to player)
+5. **Tax on seller proceeds**: 5% of $450,000 = $22,500
+6. **Player net**: $450,000 - $22,500 = **$427,500**
+7. **Agency debit**: $450,000 (payout) + $50,000 (commission) + $22,500 (tax) = **$522,500**
+8. **Treasury credit** (if tax destination is gov): **$22,500**
+
+Net result: Player got $427,500. Agency spent $522,500. Treasury gained $22,500. Difference ($72,500) is the commission — it went to staff, not back to the agency or treasury.
+
+## Monitoring tax flow
+
+The Dashboard shows:
+
+- **Recent Transactions** tab — each transaction lists tax paid
+- **Tax collected this period** — running total across all agencies
+- Per-agency budget view — tax is included in the spending calculation toward the quota
+
+The database (`dnd_eco_transactions.tax_paid`) records tax on every transaction, so you can audit the treasury's balance against the sum of all recorded taxes.

@@ -153,3 +153,97 @@ Config.Agencies = {
 ```
 
 `job` doesn't need to match `dnd_jobmanagement`'s canonical job name — if you also run that resource's purchase-document hook, add a `Config.JobAliases` entry there mapping its canonical name to your raw framework job name (e.g. `government = 'pemerintah'`).
+
+## Budget enforcement
+
+```lua
+Config.Budget = {
+    Enabled = true,
+
+    -- Seeds for NEW agency rows only; dashboard edits take over after
+    enforcedByDefault = true,
+    quotaLimit        = 2000000,  -- $ per cycle. 0 = unlimited (balance still applies)
+    quotaCycleHours   = 24,
+
+    -- Staff commission is withdrawn from the agency alongside the payout
+    commissionFromAgency = true,
+
+    -- Low-balance warning threshold (% of quota). Dashboard shows a red alert
+    -- when an agency is below this, so staff know when to request more funds
+    lowWarnPct = 0.2,
+}
+```
+
+When enabled, every **Sell** transaction withdraws the payout (and staff commission, if `commissionFromAgency = true`) from the agency's job account. The agency must have sufficient balance **and** be below its spending quota for the cycle. If either constraint fails, the sale is rejected.
+
+**Why this matters:** Without budget enforcement, agencies are infinite wallets and player income has no ceiling. With it, government becomes a meaningful role — it's the entity that injects capital into agencies' accounts on demand.
+
+- **Balance** is the hard constraint: an agency literally can't pay if the account is empty.
+- **Quota** is the soft constraint: reaching the quota per cycle is a normal, expected state. When an agency hits its quota, the market for that agency simply closes until the next cycle rolls. Players are told exactly when that happens.
+
+Per-agency overrides (available on the Dashboard):
+- `budget_enforced` — enable/disable enforcement for this one agency
+- `quota_limit` — this agency's spending cap
+- `quota_cycle_hours` — this agency's cycle length
+
+Requires `Renewed-Banking` to work (it reads/writes the agency's job account balance).
+
+## Transaction tax
+
+```lua
+Config.Tax = {
+    Enabled = true,
+    destination = 'government',  -- job name, or 'burn' to destroy the money
+
+    sellRate = 0.05,  -- 5% tax on seller's proceeds
+    buyRate  = 0.08,  -- 8% tax on buyer's total
+
+    -- Stash upkeep: a recurring cost for holding inventory
+    upkeep = {
+        Enabled        = true,
+        intervalHours  = 24,
+        flat           = 5000,   -- $ per agency per cycle
+        perUnit        = 10,     -- $ per unit of inventory held
+    },
+}
+```
+
+Tax is collected after every Sell or Buy and routed to its `destination`:
+
+- **Job account** (a job name): tax is transferred to that job's account in `Renewed-Banking`. This keeps the money supply constant; government is a treasury that throttles it.
+- **`'burn'`** — tax is destroyed. Money actually leaves the supply, acting as an economic sink.
+
+**Rounding:** Tax is always rounded DOWN (`math.floor`). If the tax on a $100 sale at 5% would be $5.00, the player gets charged $4 (the treasury gets $4), so any rounding error favors the player.
+
+**Stash upkeep:** A separate charge from transaction tax. Runs hourly (not per-transaction), withdraws from the agency's job account, and is routed back to the tax destination the same way. This prevents hoarding stock to suppress prices — warehousing now has a real cost.
+
+Requires `Renewed-Banking` to work (it reads/writes the destination job account).
+
+## Price spread (instansi vs gang)
+
+```lua
+Config.Market = {
+    demandThresholds = { high = 0.5, balanced = 1.0, low = 1.5 },
+    spread = {
+        default          = 0.08,  -- default spread (sell price ± buy price range)
+        instansiDiscount = 0.04,  -- discount for buyers with a relevant job
+        gangMarkup       = 0.06,  -- markup for gang/non-instansi buyers
+    },
+    buying = {
+        enabled = true,
+        maxPerTransaction = 50,
+    },
+}
+```
+
+When staff accept a **Buy** order, they choose a purchase type:
+
+- **Instansi** (buyer has the related job) → buyer gets a discount (default `instansiDiscount`). Prices are lower as incentive for in-house procurement.
+- **Gang/non-instansi** (buyer doesn't) → buyer pays a markup (default `gangMarkup`). Prices are higher, keeping the agency's profit margin on outside sales.
+
+Per-agency overrides (available on the Dashboard):
+- `instansi_discount` — this agency's discount amount
+- `gang_markup` — this agency's markup amount
+- `spread_pct` — this agency's default spread width
+
+The spread is applied to the dynamically-calculated mid-price (after supply/demand shifts), so the discount/markup always reflects real market conditions.

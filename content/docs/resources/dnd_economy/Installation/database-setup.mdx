@@ -34,3 +34,28 @@ Most agency/item fields are **synced from `config.lua` on every boot** (`server/
 - `dnd_eco_agencies.webhook_url`
 - `dnd_eco_agencies.buy_price_adjustment`
 - `dnd_eco_items.overridden` economic properties (base price, floor, ceiling, sensitivity, decay) — only once a government-access user has edited them from the Dashboard.
+
+## v2.0.0 schema updates
+
+The following migrations were added in v2.0.0 to support agency budgets, transaction tax, and price spreads:
+
+| Migration | Adds | Purpose |
+|---|---|---|
+| `0017_price_spread` | `agencies.spread_pct`, `instansi_discount`, `gang_markup` | Per-agency price adjustment controls |
+| `0018_agency_budget` | `agencies.budget_enforced`, `quota_limit`, `quota_cycle_hours`, `quota_spent`, `cycle_start_ts` | Agency spending limits and cycle tracking |
+| `0019_stock_target_overridden` | `agency_stock.target_overridden` | Track which stock targets have been edited from the default |
+| `0020_transaction_tax` | `transactions.tax_paid` | Record how much tax was collected on each transaction |
+
+These run automatically on boot. No manual SQL needed.
+
+## Dashboard-edited fields (survive restart)
+
+The following fields are intentionally **excluded** from the config sync so they survive a restart and reflect staff/manager edits made from the Dashboard:
+
+- `dnd_eco_agencies.webhook_url`
+- `dnd_eco_agencies.buy_price_adjustment` (renamed to `instansi_discount`/`gang_markup` in v2.0.0)
+- `dnd_eco_agencies.spread_pct`, `instansi_discount`, `gang_markup`
+- `dnd_eco_agencies.quota_limit`, `quota_cycle_hours` (per-agency overrides on top of config defaults)
+- `dnd_eco_items.overridden` economic properties (base price, floor, ceiling, sensitivity, decay) — only once a government-access user has edited them from the Dashboard.
+
+All other fields are re-synced from `config.lua` on every boot, so config changes always take effect immediately without any manual DB edits.

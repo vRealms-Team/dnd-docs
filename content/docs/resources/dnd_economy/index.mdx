@@ -9,15 +9,29 @@ import ResourceLinks from "@/components/resource-links";
 This documentation covers setup, configuration, and internals of the **dnd_economy** resource.
 
 ## What the resource does
+
 `dnd_economy` is a dynamic, supply-and-demand economy system for FiveM agencies (government, black market, or any custom job you configure). Prices move on their own — sell into an agency and its price for that item drops; buy from it and the price climbs — driven by a power-law formula against a configurable `target_stock` per item, per agency.
 
-It started as a sell-only price calculator and grew into a small B2B marketplace: agencies can also sell items back to players, fulfillment can be staff-reviewed instead of instant, and a purchase can hand off a printable receipt to `dnd_jobmanagement`.
+It started as a sell-only price calculator and grew into a full-featured B2B marketplace: agencies can also sell items back to players, fulfillment can be staff-reviewed instead of instant, purchases can hand off a printable receipt to `dnd_jobmanagement`, and agency spending is now subject to both a hard balance constraint and a soft quota cap to prevent economic collapse.
+
+## v2.0.0 highlights: Agency economics
+
+Recent updates (v2.0.0) focused on making agencies feel like real economic entities, not infinite wallets:
+
+- **Agency budgets** — agencies now spend their own money. When they accept a Sell order, the payout comes out of their job account balance. They're also subject to a spending quota per cycle, so one wealthy agency can't absorb an entire server's output in one evening.
+- **Transaction tax** — every sale or purchase can be taxed. Tax is either transferred to the government's treasury (a job account) or burned (removed from the money supply entirely), making it a true economic sink rather than inflation forever.
+- **Price spreads** — instansi buyers and gang/non-instansi buyers now see different prices: staff can apply a discount or markup per agency when accepting a buy order, based on buyer type.
+- **Stash upkeep** — agencies now pay a recurring cost to hold inventory, both a flat fee and a per-unit charge. Warehousing is no longer free.
+
+See the [Features Overview](./features-overview) and [Configuration](./Installation/configuration) for detailed breakdowns.
 
 ## Highlights
+
 - **Live pricing engine** — power-law price curve (`(target/current)^k`), configurable floor/ceiling/sensitivity/decay per item, an hourly decay scheduler, and price snapshots for trend history.
 - **Sell & Buy, both staff-first** — a sale or purchase always tries the pending queue when staff are on duty for the agency's job; Sell falls back to NPC on timeout, Buy has no timeout and waits indefinitely (a purchase needs a document printed before it can be fulfilled).
 - **Multi-item Buy cart** — a dedicated NUI lets a buyer add several items to one cart with a running total and a single checkout, instead of one order per item.
-- **Dashboard NUI** — per-agency price/stock table, target editing, price holds, Discord webhook, recent transactions, and (new) a per-agency Buy price-adjustment amount — all editable live, no restart.
+- **Agency economics** — Agencies spend their own money and have spending quotas. Transactions are taxed. Holding inventory costs upkeep. The economy has real constraints now.
+- **Dashboard NUI** — per-agency price/stock table, target editing, price holds, Discord webhook, recent transactions, budget overview, and per-agency Buy price adjustments — all editable live, no restart.
 - **Config-driven theming** — `Config.Color` lets you re-skin the NUI's accent colors without touching CSS; see [Theming](./Guides/theming) for a live preview + config generator.
 - **Optional integrations** — `Renewed-Banking` for Buy revenue (agency job account) and `dnd_jobmanagement` for auto-queuing a printable purchase document when staff accept a Buy order.
 
@@ -28,26 +42,31 @@ It started as a sell-only price calculator and grew into a small B2B marketplace
 2. If staff are on duty for that agency's job, the sale goes to the pending queue and a staff member accepts/rejects it from the Pending NUI (`/depending`) or `/deaccept <id>`.
 3. If nobody accepts before `Config.HumanResponseTimeout`, or nobody's on duty, it falls back to an instant NPC sale.
 4. Price recomputes immediately after any sale (stock went up → price drifts down).
+5. The payout is drawn from the agency's job account (if budget enforcement is enabled). If the agency is out of balance, the sale is rejected.
 
 ### Buying from an agency
 1. Player interacts with the same NPC's Buy option — opens a cart NUI (not the sell menu): browse items, add several with quantities, see a running total, checkout.
 2. Checkout always creates a pending order — no timeout, no instant fallback. If nobody's on duty, the buyer is told to wait; the order stays queued.
 3. Staff review it from the Pending NUI's **Buy** tab, pick a purchase-type ("instansi"/job vs "gang"/non-instansi — applies a configurable ± price adjustment), and accept.
 4. If `Config.Printer = 'dnd_jobmanagement'`, a printable purchase document is queued automatically into that resource's printer system at accept time.
+5. Revenue lands in the agency's job account (if banking is enabled).
 
 ### Dashboard & market overview
-- `/dedashboard` — per-agency manager view: prices, targets, holds, webhook, transactions, Buy price adjustment.
+- `/dedashboard` — per-agency manager view: prices, targets, holds, webhook, transactions, budget status, upkeep costs.
 - `/demarket` — read-only, public-facing overview across all agencies (demand labels, optional stock numbers per `publicStock`).
 
 ## Recommended first steps
 1. Install dependencies — see [Dependencies](./Installation/dependencies).
 2. Import the database schema — see [Database Setup](./Installation/database-setup).
-3. Build the frontend (`cd web && npm install && npm run build`).
-4. Configure `config.lua` to match your server (agencies, items, banking, printer integration) — see [Configuration](./Installation/configuration).
-5. Optional: re-skin the NUI's accent colors — see [Theming](./Guides/theming).
+3. Configure `config.lua` to match your server (agencies, items, banking, printer integration) — see [Configuration](./Installation/configuration). **This is where you enable budgets and taxes**.
+4. Optional: re-skin the NUI's accent colors — see [Theming](./Guides/theming).
+5. Add `ensure dnd_economy` to your `server.cfg` and start the resource.
+6. **First boot**: watch the console for `ConfigSync.ValidateJobs` warnings. Job names must match your framework exactly (case-sensitive, no aliases).
 
 ## Production-ready settings
 - `Config.Debug = false` (`config.lua`)
-- Verify `web/dist` was built (`cd web && npm run build`) — it's git-ignored and not shipped pre-built.
-- Set `Config.Banking.Enabled = true` with `Renewed-Banking` running if you want Buy enabled — it stays effectively disabled otherwise.
+- `Config.Banking.Enabled = true` with `Renewed-Banking` running — the resource stays production-safe even without it, but Buy revenue will be lost.
+- `Config.Budget.Enabled = true` to enforce agency spending limits — set to `false` only during transition testing.
+- `Config.Tax.Enabled = true` and set `Config.Tax.destination` to a valid government job name or `'burn'` to remove money from the supply.
 - Set `Config.Printer = 'none'` if you don't run `dnd_jobmanagement`, or `'dnd_jobmanagement'` to enable the purchase-document hook.
+- Verify job names in `Config.Jobs` and `Config.Agencies[].job` match your framework exactly — this is silent-failure territory.

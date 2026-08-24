@@ -1,0 +1,109 @@
+---
+title: Agency Budget System
+---
+
+## Overview
+
+In v2.0.0, agencies can no longer conjure money from nowhere. When an agency accepts a Sell order, the payout is **withdrawn from the agency's job account balance**. This creates real economic constraints and makes government a meaningful role.
+
+## How it works
+
+### Two-constraint model
+
+Budget enforcement is subject to **two independent limits**. Both must pass for a sale to succeed:
+
+1. **Balance constraint** — the agency's job account must hold the payout amount (+ staff commission if `commissionFromAgency = true`).
+2. **Quota constraint** — the agency's spending this cycle must stay below its per-cycle quota limit.
+
+If either fails, the sale is rejected and the player is told why.
+
+### The quota cycle
+
+A quota is a **soft spending cap per cycle**. When an agency hits its quota, the market for that agency simply closes until the next cycle rolls.
+
+Example: if quota is $2,000,000/24h and the agency hits $2M spent, all Sell attempts are rejected with "Market closed — reopens at [time]". At the cycle boundary, the clock resets and the agency can sell again.
+
+The cycle length is per-agency and dashboard-editable. Default is 24 hours from the first transaction.
+
+### Graceful degradation
+
+If budget enforcement **cannot run** (e.g., `Renewed-Banking` is down or the banking bridge is misconfigured), enforcement is skipped **rather than blocking every sale**. The system logs a warning once per agency and reverts to the old "free money" behavior until the bridge is back.
+
+This is deliberate: the resource staying online with a leaky economy is better than the whole system being dead because one resource went down.
+
+## Configuration
+
+```lua
+Config.Budget = {
+    Enabled = true,
+
+    enforcedByDefault = true,     -- new agencies start enforced
+    quotaLimit        = 2000000,  -- $ per cycle
+    quotaCycleHours   = 24,
+
+    commissionFromAgency = true,  -- staff commission also deducted from agency
+    lowWarnPct = 0.2,             -- warn dashboard at 20% of quota remaining
+}
+```
+
+### Per-agency overrides
+
+After first start, each agency can override these defaults from the Dashboard (government-access only):
+
+- `budget_enforced` — toggle enforcement on/off for this agency
+- `quota_limit` — this agency's custom quota
+- `quota_cycle_hours` — this agency's custom cycle length
+
+These survive restart and take precedence over `Config`.
+
+## Dashboard workflow
+
+A government-access player can see each agency's budget status in the Dashboard:
+
+- **Current balance** — job account balance right now
+- **Spent this cycle** — total payout already charged
+- **Quota limit** — this cycle's spending cap
+- **Time to reset** — when the quota resets (if at limit)
+- **Low-balance alert** — red warning when below `lowWarnPct` of quota
+
+If an agency's balance is critically low, government can inject funds directly into the job account through the Dashboard's Budget tab (if they have `Renewed-Banking`'s account management access).
+
+## Staff perspective
+
+From staff's perspective, the change is transparent. They still accept/reject Sell orders. What's new:
+
+- If the agency can't afford a payout, the sale is rejected when they accept it (not before).
+- If the agency has hit its quota, the sale is rejected (again, at acceptance time).
+- The pending Sell UI shows these rejections clearly: "Agency balance insufficient" or "Quota limit reached this cycle".
+
+## Interaction with Tax and Commission
+
+A Sell transaction involves three money movements:
+
+1. **Seller payout** — withdrawn from agency account
+2. **Staff commission** — if `commissionFromAgency = true`, also withdrawn from agency; otherwise, it's a bonus that doesn't cost the agency
+3. **Tax** — collected AFTER the transaction completes (if Tax is enabled), routed to its destination
+
+The budget constraint covers items 1 and 2. Item 3 happens after, so tax doesn't "count against" the budget check itself — but it does further drain the agency's balance.
+
+## Money flow diagram
+
+```
+Player Sells Item
+  ↓
+Staff tries to Accept
+  ↓
+Budget check:
+  - Does agency have $X (payout + commission)?
+  - Is spending < quota this cycle?
+  ↓ [both yes]
+Accept succeeds:
+  - Payout withdrawn from agency → player
+  - Commission withdrawn from agency → staff
+  - Price recomputed
+  - Tax collected (if enabled) → treasury/burn
+  ↓ [either no]
+Reject:
+  - Nothing moves
+  - Player is told why
+```

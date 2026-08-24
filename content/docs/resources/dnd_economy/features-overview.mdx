@@ -2,73 +2,150 @@
 title: Features Overview
 ---
 
-## Pricing engine
+## Dynamic pricing
 
-Each agency-item pair tracks a `current_price` computed from a power-law curve against a configurable `target_stock`:
+Every agency has a **target stock** per item — the "ideal" amount. When actual stock deviates from that target, prices move automatically via a power-law formula to push stock back toward target.
 
-```
-price = base_price * clamp((target_stock / current_stock) ^ sensitivity, floor, ceiling)
-```
+- **High stock** (above target) → prices drop (incentivize sales out)
+- **Low stock** (below target) → prices climb (incentivize inflow)
+- The formula is configurable per item: floor/ceiling bounds, sensitivity (how fast it reacts), decay (how much stock is "forgotten" per cycle)
+- Price snapshots are captured hourly for trend sparklines in the Dashboard
 
-- Selling into an agency raises `current_stock` → price drifts down.
-- Buying from an agency lowers `current_stock` → price drifts up.
-- An hourly scheduler decays stock toward the target so prices don't stay pinned forever on an idle economy.
-- Every price move is snapshotted (`dnd_eco_price_snapshots`) for the Market/Dashboard trend sparkline.
-- A manager can **hold** a price (freeze it at its current value, auto-releases after 24h) from the Dashboard.
+Stock is recomputed immediately after every Sell or Buy.
 
-## Sell flow
+## Sell workflow
 
-- Reached via an ox_target option at the agency's NPC (`/desell` is also available directly).
-- Every agency always tries the **staff-first pending queue** first when staff are on duty for that agency's job — a sale isn't gated by any per-agency setting, it just needs an on-duty handler.
-- No handler accepts within `Config.HumanResponseTimeout` (default 300s), or nobody's on duty at all → falls back to an instant NPC sale.
-- Staff accepting a sale personally earns a commission (`Config.Agencies[id].commission`); an NPC/timeout fallback pays no commission.
-- A per-player, per-item cooldown (`Config.SellCooldown`) prevents spamming the same item.
-- The seller picks **Cash** or **Bank Transfer** right in the sell dialog before confirming — a per-transaction choice, not a `Config` value. `Config.MoneyAccount` is only the fallback if no choice is sent.
+1. Player interacts with agency NPC and selects items/quantity
+2. System shows the current sell price and expected payout (after commission, before tax)
+3. **If staff are on duty** for the agency's job → sale goes to pending queue
+4. **If no staff or pending times out** → instant NPC sale (with same price, same commission)
+5. Staff review and accept/reject from `/depending` or the Pending NUI
+6. On acceptance: payout is withdrawn from agency's job account, commission and tax are calculated
 
-## Buy flow (multi-item cart)
+The player is always offered the sell-side of the price spread, not the midpoint.
 
-- Reached via a second ox_target option at the same NPC — opens a dedicated cart NUI, not the sell menu.
-- Browse the agency's live catalog, add several items with individual quantities, see a running grand total, then **checkout once** for the whole cart.
-- A Buy order **always** goes to the pending queue — there's no countdown and no automatic/NPC fallback, because fulfillment needs a staff decision (and optionally prints a document) before it can complete. With zero staff on duty the buyer is simply told to wait; the order stays queued indefinitely.
-- Before checkout, the buyer picks **Cash** or **Bank Transfer** for the whole cart, same per-transaction choice as Sell.
-- Revenue goes into the agency's **job bank account** via `Renewed-Banking` (`Config.Banking`), separate from the personal cash flow Buy/Sell use.
+## Buy workflow
 
-## Cash & bank payments
+1. Player opens a cart interface and browses available items
+2. Adds multiple items with quantities, sees a running total, applies tax estimate
+3. **Checkout creates a pending order** — always. No NPC fallback, no timeout.
+4. If staff are on-duty, they're notified; otherwise the buyer is told to wait
+5. Staff review the order and pick a **purchase type**:
+   - **Instansi** (buyer has the job) → price gets a per-agency discount
+   - **Gang/non-instansi** (buyer doesn't) → price gets a per-agency markup
+6. On acceptance: revenue lands in the agency's job account, optional printable receipt is queued to `dnd_jobmanagement`
 
-- Both Sell and Buy let the player choose their payment/payout method at the point of the transaction (not a server-wide `Config` setting) — `Bridge.GetPlayerMoney`/`RemoveMoney`/`AddMoney` accept `'cash'` or `'bank'` as the account name on both the ESX and QBX bridges.
-- A **bank**-settled transaction is mirrored into two places so it's never just a silent balance change:
-  1. Renewed-Banking's own statement ledger, via `Banking.LogPersonalTransaction`.
-  2. If `dnd_phone` is installed, straight into the player's **mBanking history** on their phone, via `dnd_phone`'s `exports.dnd_phone:RecordBankHistory` (best-effort — a no-op if `dnd_phone` isn't running or the player has no registered device).
-- Cash transactions have no ledger to mirror into — only the real balance changes, as usual.
+Staff see the adjusted price (with discount/markup applied) when reviewing, so they know what the player will actually pay.
 
-## Purchase & sale log grouping
+## Price spread (instansi vs gang)
 
-- The Dashboard's transaction log used to show one row per item in a cart — a 5-item Buy order took 5 rows. Every line from the same checkout now shares an `order_id`, and the Dashboard groups them into **one collapsible entry per transaction**: buyer/seller, handler, total, and payment method up front, with a click-to-expand item breakdown underneath.
-- The buyer's/seller's in-game character name is stored on each transaction (`buyer_name`/`seller_name`), not just their raw identifier.
+When staff accept a Buy order, the purchase-type choice determines the final price:
 
-## Pending review (staff)
+- **Instansi discount** — buyers with the agency's job see a lower price (e.g., 4% off mid-price). Internal procurement is incentivized.
+- **Gang markup** — buyers without the job see a higher price (e.g., 6% markup). Outside sales are more profitable for the agency.
 
-- `/depending` opens the Pending NUI with two tabs: **Sell requests** and **Buy orders**.
-- Sell cards show a countdown and Accept/Reject.
-- Buy cards show the full cart (items, quantities, per-line price, total) and require picking a purchase type before Accept unlocks:
-  - **Instansi** — buyer has a job; applies a **discount** to `pricePerUnit`.
-  - **Gang / non-instansi** — buyer doesn't; applies a **markup**.
-  - The ± amount is per-agency and editable from the Dashboard (see below) — it isn't hardcoded.
-- Accepting a Buy order (with `Config.Printer = 'dnd_jobmanagement'`) automatically queues a printable purchase document in `dnd_jobmanagement`'s printer system — no manual step, staff just walk to a printer prop and print it, same as that resource's medical/crime records.
+Both are **per-agency and dashboard-editable**, so each agency can tune its own margins.
 
-## Dashboard (`/dedashboard`)
+## Agency budgets
 
-Per-agency manager view, access-gated by job + grade (or a `Config.Jobs` government override):
-- Prices/stock table with inline target editing and price-hold toggle.
-- Discord webhook URL for the agency's live market embed.
-- **Buy Price Adjustment** — the ± amount staff apply for instansi/gang, editable live.
-- Recent transactions — one expandable entry per purchase/sale (see [Purchase & sale log grouping](#purchase--sale-log-grouping) above), with in-game character names, direction pill, payment method, and system-fallback indicator.
-- Government-access users can also edit an item's economic properties (base price, floor, ceiling, sensitivity, decay) directly — those overrides persist across config syncs.
+Agencies are no longer infinite wallets. When staff accept a Sell, the payout is **withdrawn from the agency's job account**. The agency must have sufficient balance **and** stay within its spending quota.
 
-## Market overview (`/demarket`)
+- **Balance constraint** — hard limit, can't pay if the account is empty
+- **Quota constraint** — soft limit, market closes when agency hits its per-cycle spending cap; reopens at cycle boundary
 
-Public, read-only view across every agency: demand classification per item (High/Normal/Low/Oversupplied), price trend, and optionally raw stock numbers if the agency has `publicStock = true`.
+Per-agency overrides allow fine-tuning enforcement and quota settings from the Dashboard.
 
-## Theming
+See [Agency Budget System](./Guides/budget-system) for details.
 
-The NUI's accent colors (buttons, borders, status pills) are driven by `Config.Color` — no CSS editing required. See [Theming](./Guides/theming) for a live preview and a config snippet generator.
+## Transaction tax and stash upkeep
+
+- **Transaction tax** — a percentage of every Sell/Buy is collected (separate rates for each). Tax is routed to a government job account (treasury) or destroyed (money sink).
+- **Stash upkeep** — hourly charge for holding inventory (flat fee + per-unit fee). Prevents hoarding stock to suppress prices.
+
+Both are **optional** (can be disabled) and both are **reconfigurable** from the Dashboard (for government-access users).
+
+See [Transaction Tax & Upkeep](./Guides/tax-system) for details.
+
+## Dashboard
+
+A game-facing NUI for agency managers and government. Accessible via `/dedashboard`. Features:
+
+### Agency manager view (per-agency)
+- **Stock & pricing** — current price, target stock, and live pricing curve for each item
+- **Price holds** — temporarily lock a price at a specific level (during events, sales, etc.)
+- **Transactions** — recent Sell/Buy history, grouped by order, expandable to line items
+- **Discord webhook** — log significant price changes to Discord in real-time
+- **Buy price adjustment** — instansi discount and gang markup, per-agency
+- **Budget status** — current balance, spending this cycle, quota limit, time to reset
+
+### Government view (cross-agency)
+- Bird's-eye view of all agencies
+- Budget overview (low-balance alerts, quotas reached)
+- Tax collected, upkeep charged
+- Treasury account balance
+
+All dashboard edits take effect live — no restart needed.
+
+## Market overview
+
+A read-only NUI (`/demarket`) showing every agency at a glance:
+
+- Current price per item
+- Stock level and demand label (high/balanced/low)
+- Optional: actual stock numbers (if agency has `publicStock = true`)
+
+Players can use this to comparison-shop between agencies.
+
+## Pending orders
+
+The `/depending` command (or the Pending NUI) shows:
+
+- **Sell requests** — pending Sell orders awaiting staff acceptance, with countdown until NPC fallback
+- **Buy orders** — pending Buy orders awaiting staff acceptance, no timeout
+
+Staff can accept/reject individually, with optional price/quantity adjustments before acceptance.
+
+## Optional integrations
+
+### Renewed-Banking
+
+If installed and enabled (`Config.Banking.Enabled = true`):
+
+- Buy revenue deposits directly into the agency's job account (not a personal balance)
+- Agency budget enforcement reads/writes the job account balance
+- Tax is transferred to the treasury job account
+- Stash upkeep is charged from the job account
+
+Without it, Buy is disabled and budgets can't enforce spending.
+
+### dnd_jobmanagement
+
+If installed and enabled (`Config.Printer = 'dnd_jobmanagement'`):
+
+- When staff accept a Buy order, a printable purchase document is auto-queued to the printer system
+- Document shows buyer, items, quantities, price-per-unit, total, and any applicable discount/markup
+
+Without it, sales complete normally — the printout just doesn't happen.
+
+### dnd_phone
+
+If installed:
+
+- Bank-paid transactions (when `Config.MoneyAccount = 'bank'`) are logged to the player's mBanking history
+- Shows up on the player's in-game phone, not just their balance
+
+Without it, transactions still work — they just don't appear in the phone's history.
+
+## Configuration-driven
+
+Everything is tuned from `config.lua`:
+
+- Item price floors/ceilings, sensitivity, decay
+- Agency job, commission, stash location
+- Budget limits and quotas
+- Tax rates and destination
+- Upkeep fees
+- Color theming (accent colors, no CSS edits needed)
+- Command names (avoid conflicts with other resources)
+
+A few runtime fields (webhook URLs, dashboard edits) are **intentionally excluded** from the config sync so they survive a restart — see [Configuration](./Installation/configuration) for the full list.
