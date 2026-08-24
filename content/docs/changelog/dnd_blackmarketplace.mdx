@@ -2,6 +2,19 @@
 title: dnd_blackmarketplace
 ---
 
+### v1.1.1 — Security & Install Fixes
+
+**Security fixes**
+- Delivery meetup coordinates are no longer readable by anyone. The request that returns an order's COD location had no authorization at all, so any client could walk through order IDs and stake out every deal in progress. It is now limited to the order's own buyer and seller, a logged-in courier (and only while the order sits in the delivery queue), and Elite.
+- Courier actions now require the courier flashdisk login, not just the tablet item. Because the tablet is droppable and stealable, holding one was enough to list and claim every seller's deliveries. v1.1.0 removed that shortcut from the interface, but the server still accepted it — it no longer does.
+- An order can no longer be completed while the buyer is offline. Payment was silently skipped in that case and the order was still marked completed, so the buyer received the goods for free. Completion now fails with a clear message and the order stays completable once the buyer is back online with their flashdisk.
+- Ratings and disputes can no longer be filed on another organization's behalf — enough, previously, to poison any seller's reputation. Identity now comes from the logged-in session: only an order's buyer can rate it, and only the two parties to an order can open a dispute on it.
+- Which side gets charged when an order completes is now decided by the server from the logged-in session, instead of a value the interface sent along with the request.
+
+**Bug fixes**
+- The delivery point picked during checkout now actually sets a GPS waypoint. The request was rejected every time because it referred to an order that did not exist yet, so the marker was never placed.
+- Fixed a fresh install aborting partway through creating its tables with `unable to execute a query ... near 'NULL'`. The schema file built one of its statements out of session variables, which do not survive the database connection pool. That step was redundant — the same columns are already created directly — so it was removed. Nothing needs cleaning up by hand: restarting the resource replays the schema and finishes the remaining tables.
+
 ### v1.1.0 — Courier Identity Overhaul, Elite Item Picker, Chat Anonymization
 
 **New features**
