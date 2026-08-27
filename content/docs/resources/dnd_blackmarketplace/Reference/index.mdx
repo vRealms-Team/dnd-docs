@@ -8,17 +8,55 @@ All commands are server-side only and check the player's role/permissions server
 
 ### Elite admin commands
 
-| Command | Usage | Effect |
-|---------|-------|--------|
-| `/generate_elite_flashdisk <name> <pin>` | Generate initial Elite flashdisk | Creates Elite org + flashdisk, logs key to console |
-| `/create_item <id> <label> <price> <category> <description>` | Add item to catalog | Item available for sellers (if given permission) |
-| `/create_seller <faction> <name> <pin> [player_id]` | Create seller org | Seller player given flashdisk if online |
-| `/create_buyer <type> <name> <pin> [player_id]` | Create buyer org | Buyer player given flashdisk if online |
-| `/generate_seller_flashdisk <seller_id> <pin>` | Generate extra seller key | Allows sharing seller access |
-| `/generate_buyer_flashdisk <buyer_id> <pin>` | Generate extra buyer key | Allows sharing buyer access |
-| `/generate_elite_flashdisk <name> <pin>` | Generate additional Elite key | For multi-owner setups |
-| `/give_tablet <player_id>` | Give tablet item | Player receives tablet item |
+Every command below is **restricted** — it does nothing until the calling player
+holds the matching ACE permission (see [Granting yourself admin](#granting-yourself-admin)).
 
+They also hand the flashdisk or tablet to **the player who ran them**, so they must
+be typed in-game. Running them from the server console creates the database rows
+with no item to show for it.
+
+| Command | Effect |
+|---------|--------|
+| `/generate_elite_flashdisk [id] [name] [pin]` | Creates the Elite org and hands you its flashdisk. `id` is the internal org id, `name` is what shows at login, `pin` must be at least 4 characters. |
+| `/create_seller [org_id] [name] [pin]` | Creates a seller org. Does **not** hand out a flashdisk — use `/generate_seller_flashdisk` after. |
+| `/create_buyer [org_id] [name] [pin]` | Creates a buyer org, same as above. |
+| `/generate_seller_flashdisk [org_id]` | Hands you a flashdisk for an existing seller org, to pass on in character. |
+| `/generate_buyer_flashdisk [org_id]` | Same, for a buyer org. |
+| `/regenerate_elite_flashdisk [org_id]` | Issues a replacement Elite flashdisk. Use when the original is lost or was never received. |
+| `/create_item [item_id] [name] [label] [price] [category]` | Adds an item to the catalog. Easier to do from Elite Desktop, which has a searchable item picker. |
+| `/list_sellers` / `/list_buyers` / `/list_items` | Prints the org and catalog ids, for when you need one for another command. |
+| `/give_tablet [player_id]` | Gives the tablet item. Defaults to yourself when no id is passed. |
+
+Arguments are split on spaces, so keep a `name` to a single word unless you are
+sure your server build accepts quoted arguments.
+
+### Granting yourself admin
+
+Add to `server.cfg`, then restart:
+
+```cfg
+add_ace group.dnd_admin command.generate_elite_flashdisk allow
+add_ace group.dnd_admin command.generate_seller_flashdisk allow
+add_ace group.dnd_admin command.generate_buyer_flashdisk allow
+add_ace group.dnd_admin command.regenerate_elite_flashdisk allow
+add_ace group.dnd_admin command.create_seller allow
+add_ace group.dnd_admin command.create_buyer allow
+add_ace group.dnd_admin command.create_item allow
+add_ace group.dnd_admin command.list_sellers allow
+add_ace group.dnd_admin command.list_buyers allow
+add_ace group.dnd_admin command.list_items allow
+add_ace group.dnd_admin command.give_tablet allow
+add_ace group.dnd_admin command.test_tablet allow
+
+add_principal identifier.steam:XXXXXXXXXXXXXXXXX group.dnd_admin
+```
+
+### First-time setup
+
+1. Grant yourself the ACE permissions above and restart the server.
+2. In-game, run `/generate_elite_flashdisk highTable "High Table" 1234` — you receive the flashdisk item.
+3. Use the flashdisk from your inventory and enter the PIN to open Elite Desktop.
+4. Add items to the catalog, then create seller and buyer orgs and hand out their flashdisks in character.
 ### Seller commands
 
 None (all via NUI dashboard).
